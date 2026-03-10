@@ -1,124 +1,110 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Delhi Metro Route Finder</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delhi Metro Route Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="blob blob-1"></div>
-  <div class="blob blob-2"></div>
-  <div class="blob blob-3"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
 
-  <!-- Theme Button -->
-  <div class="theme-wrap" id="theme-wrap">
-    <button class="theme-toggle-btn" onclick="toggleThemeMenu()">
-      <span id="theme-icon">⚙</span>
-      <span id="theme-label">Auto</span>
-      <span class="chevron">▾</span>
+<div class="wrapper">
+
+  <header>
+    <div class="logo-row">
+      <div class="metro-icon">🚇</div>
+      <h1>DELHI METRO</h1>
+    </div>
+    <p class="subtitle">Route Finder — 257 Stations</p>
+    <div class="lines-strip">
+      <span class="line-pill" style="background:rgba(230,57,70,0.2);color:#E63946;">Red</span>
+      <span class="line-pill" style="background:rgba(255,183,3,0.2);color:#FFB703;">Yellow</span>
+      <span class="line-pill" style="background:rgba(0,119,182,0.2);color:#5BC0FF;">Blue</span>
+      <span class="line-pill" style="background:rgba(45,198,83,0.2);color:#2DC653;">Green</span>
+      <span class="line-pill" style="background:rgba(123,47,190,0.2);color:#B46EFF;">Violet</span>
+      <span class="line-pill" style="background:rgba(233,30,140,0.2);color:#FF6EB8;">Pink</span>
+      <span class="line-pill" style="background:rgba(194,24,91,0.2);color:#FF6090;">Magenta</span>
+      <span class="line-pill" style="background:rgba(100,149,237,0.2);color:#7EB8FF;">Airport</span>
+      <span class="line-pill" style="background:rgba(128,128,128,0.2);color:#AAAAAA;">Grey</span>
+    </div>
+  </header>
+
+  <div class="card">
+
+    <!-- FROM -->
+    <div class="field-group">
+      <div class="field-label"><span class="dot dot-from"></span> From Station</div>
+      <div class="input-wrap">
+        <span class="input-icon">📍</span>
+        <input type="text" id="from-input" placeholder="e.g. Kashmere Gate" autocomplete="off" />
+        <div class="dropdown" id="from-dropdown"></div>
+      </div>
+    </div>
+
+    <!-- Swap -->
+    <div class="connector">
+      <div class="connector-line"></div>
+      <button class="swap-btn" onclick="swapStations()" title="Swap stations">⇅</button>
+      <div class="connector-line"></div>
+    </div>
+
+    <!-- TO -->
+    <div class="field-group">
+      <div class="field-label"><span class="dot dot-to"></span> To Station</div>
+      <div class="input-wrap">
+        <span class="input-icon">🏁</span>
+        <input type="text" id="to-input" placeholder="e.g. Chandni Chowk" autocomplete="off" />
+        <div class="dropdown" id="to-dropdown"></div>
+      </div>
+    </div>
+
+    <button class="find-btn" id="find-btn" onclick="findRoute()" disabled>
+      FIND ROUTE →
     </button>
-    <div class="theme-menu" id="theme-menu">
-      <div class="theme-option" data-t="auto"  onclick="setTheme('auto')">⚙ &nbsp;Auto</div>
-      <div class="theme-option" data-t="light" onclick="setTheme('light')">☀ &nbsp;Light</div>
-      <div class="theme-option" data-t="dark"  onclick="setTheme('dark')">☾ &nbsp;Dark</div>
-    </div>
   </div>
 
-  <div class="wrapper">
-
-    <header>
-      <div class="logo-row">
-        <div class="metro-icon">🚇</div>
-        <h1>DELHI METRO</h1>
-      </div>
-      <p class="subtitle">Route Finder — 257 Stations</p>
-      <div class="lines-strip">
-        <span class="line-pill" style="background:rgba(230,57,70,0.2);color:#E63946;">Red</span>
-        <span class="line-pill" style="background:rgba(255,183,3,0.2);color:#FFB703;">Yellow</span>
-        <span class="line-pill" style="background:rgba(0,119,182,0.2);color:#5BC0FF;">Blue</span>
-        <span class="line-pill" style="background:rgba(45,198,83,0.2);color:#2DC653;">Green</span>
-        <span class="line-pill" style="background:rgba(123,47,190,0.2);color:#B46EFF;">Violet</span>
-        <span class="line-pill" style="background:rgba(233,30,140,0.2);color:#FF6EB8;">Pink</span>
-        <span class="line-pill" style="background:rgba(194,24,91,0.2);color:#FF6090;">Magenta</span>
-        <span class="line-pill" style="background:rgba(100,149,237,0.2);color:#7EB8FF;">Airport</span>
-        <span class="line-pill" style="background:rgba(128,128,128,0.2);color:#AAAAAA;">Grey</span>
-      </div>
-    </header>
-
-    <div class="card">
-
-      <!-- FROM -->
-      <div class="field-group">
-        <div class="field-label"><span class="dot dot-from"></span> From Station</div>
-        <div class="input-wrap">
-          <span class="input-icon">📍</span>
-          <input type="text" id="from-input" placeholder="e.g. Kashmere Gate" autocomplete="off" />
-          <div class="dropdown" id="from-dropdown"></div>
-        </div>
-      </div>
-
-      <!-- Swap -->
-      <div class="connector">
-        <div class="connector-line"></div>
-        <button class="swap-btn" onclick="swapStations()" title="Swap stations">⇅</button>
-        <div class="connector-line"></div>
-      </div>
-
-      <!-- TO -->
-      <div class="field-group">
-        <div class="field-label"><span class="dot dot-to"></span> To Station</div>
-        <div class="input-wrap">
-          <span class="input-icon">🏁</span>
-          <input type="text" id="to-input" placeholder="e.g. Chandni Chowk" autocomplete="off" />
-          <div class="dropdown" id="to-dropdown"></div>
-        </div>
-      </div>
-
-      <button class="find-btn" id="find-btn" onclick="findRoute()" disabled>
-        FIND ROUTE →
-      </button>
-    </div>
-
-    <!-- Quick picks -->
-    <div class="quick-picks">
-      <p class="quick-label">Popular Routes</p>
-      <div class="picks-grid" id="picks-grid"></div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats-row">
-      <div class="stat"><div class="stat-num">257</div><div class="stat-lbl">Stations</div></div>
-      <div class="stat-divider"></div>
-      <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Lines</div></div>
-      <div class="stat-divider"></div>
-      <div class="stat"><div class="stat-num">353</div><div class="stat-lbl">KM</div></div>
-    </div>
-
+  <!-- Quick picks -->
+  <div class="quick-picks">
+    <p class="quick-label">Popular Routes</p>
+    <div class="picks-grid" id="picks-grid"></div>
   </div>
 
-  <!-- Route Options Popup -->
-  <div class="popup-overlay" id="route-popup" onclick="handleOverlayClick(event)">
-    <div class="popup-box">
-      <button class="popup-close" onclick="closePopup()">✕</button>
-      <div class="popup-title">CHOOSE HOW TO VIEW</div>
-      <div class="popup-route">
-        <strong id="popup-from">—</strong><br>↓<br>
-        <strong id="popup-to">—</strong>
-      </div>
-      <button class="popup-btn btn-google" id="btn-google">
-        <div class="popup-btn-icon">🔍</div>
-        <div class="popup-btn-text">Google Search<span>See all results for this route</span></div>
-      </button>
-      <button class="popup-btn btn-maps" id="btn-maps">
-        <div class="popup-btn-icon">🗺️</div>
-        <div class="popup-btn-text">Google Maps<span>Live timings, fare &amp; directions</span></div>
-      </button>
-    </div>
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat"><div class="stat-num">257</div><div class="stat-lbl">Stations</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Lines</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat"><div class="stat-num">353</div><div class="stat-lbl">KM</div></div>
   </div>
 
-  <script src="script.js"></script>
+</div>
+
+<!-- Route Options Popup -->
+<div class="popup-overlay" id="route-popup" onclick="handleOverlayClick(event)">
+  <div class="popup-box">
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div class="popup-title">CHOOSE HOW TO VIEW</div>
+    <div class="popup-route">
+      <strong id="popup-from">—</strong><br>↓<br>
+      <strong id="popup-to">—</strong>
+    </div>
+    <button class="popup-btn btn-google" id="btn-google">
+      <div class="popup-btn-icon">🔍</div>
+      <div class="popup-btn-text">Google Search<span>See all results for this route</span></div>
+    </button>
+    <button class="popup-btn btn-maps" id="btn-maps">
+      <div class="popup-btn-icon">🗺️</div>
+      <div class="popup-btn-text">Google Maps<span>Live timings, fare &amp; directions</span></div>
+    </button>
+  </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
