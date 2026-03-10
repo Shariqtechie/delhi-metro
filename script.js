@@ -389,4 +389,3 @@ document.addEventListener('keydown', e => {
     if (!btn.disabled) findRoute();
   }
 });
-</script>
