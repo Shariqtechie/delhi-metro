@@ -13,11 +13,18 @@
   <div class="blob blob-2"></div>
   <div class="blob blob-3"></div>
 
-  <!-- Theme Switcher -->
-  <div class="theme-switcher">
-    <button class="theme-btn" data-t="auto" onclick="setTheme('auto')">⚙ Auto</button>
-    <button class="theme-btn" data-t="light" onclick="setTheme('light')">☀ Light</button>
-    <button class="theme-btn" data-t="dark" onclick="setTheme('dark')">☾ Dark</button>
+  <!-- Theme Button -->
+  <div class="theme-wrap" id="theme-wrap">
+    <button class="theme-toggle-btn" onclick="toggleThemeMenu()">
+      <span id="theme-icon">⚙</span>
+      <span id="theme-label">Auto</span>
+      <span class="chevron">▾</span>
+    </button>
+    <div class="theme-menu" id="theme-menu">
+      <div class="theme-option" data-t="auto"  onclick="setTheme('auto')">⚙ &nbsp;Auto</div>
+      <div class="theme-option" data-t="light" onclick="setTheme('light')">☀ &nbsp;Light</div>
+      <div class="theme-option" data-t="dark"  onclick="setTheme('dark')">☾ &nbsp;Dark</div>
+    </div>
   </div>
 
   <div class="wrapper">
@@ -98,23 +105,16 @@
       <button class="popup-close" onclick="closePopup()">✕</button>
       <div class="popup-title">CHOOSE HOW TO VIEW</div>
       <div class="popup-route">
-        <strong id="popup-from">—</strong><br>
-        ↓<br>
+        <strong id="popup-from">—</strong><br>↓<br>
         <strong id="popup-to">—</strong>
       </div>
       <button class="popup-btn btn-google" id="btn-google">
         <div class="popup-btn-icon">🔍</div>
-        <div class="popup-btn-text">
-          Google Search
-          <span>See all results for this route</span>
-        </div>
+        <div class="popup-btn-text">Google Search<span>See all results for this route</span></div>
       </button>
       <button class="popup-btn btn-maps" id="btn-maps">
         <div class="popup-btn-icon">🗺️</div>
-        <div class="popup-btn-text">
-          Google Maps
-          <span>Live timings, fare &amp; directions</span>
-        </div>
+        <div class="popup-btn-text">Google Maps<span>Live timings, fare &amp; directions</span></div>
       </button>
     </div>
   </div>
