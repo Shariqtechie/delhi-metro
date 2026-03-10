@@ -354,7 +354,7 @@ function swapStations() {
 }
 
 // ── IMPORTANT: Replace this with your Cloudflare Worker URL after deploying ──
-const WORKER_URL = 'https://YOUR-WORKER-NAME.workers.dev';
+const WORKER_URL = 'https://delhi-metro-worker.shariqahmad129.workers.dev';
 
 function handleOverlayClick(e) {
   if (e.target === document.getElementById('route-popup')) closePopup();
