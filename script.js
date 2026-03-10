@@ -1,70 +1,13 @@
-/* ═══════════════════════════════
-   THEME SYSTEM
-═══════════════════════════════ */
-
-const THEME_KEY = 'dmrf-theme';
-const THEME_ICONS  = { auto: '⚙', light: '☀', dark: '☾' };
-const THEME_LABELS = { auto: 'Auto', light: 'Light', dark: 'Dark' };
-
-function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem(THEME_KEY, theme);
-
-  // Update button label + icon
-  document.getElementById('theme-icon').textContent  = THEME_ICONS[theme];
-  document.getElementById('theme-label').textContent = THEME_LABELS[theme];
-
-  // Mark active option
-  document.querySelectorAll('.theme-option').forEach(el => {
-    el.classList.toggle('active', el.getAttribute('data-t') === theme);
-  });
-
-  // Close menu
-  document.getElementById('theme-wrap').classList.remove('open');
-}
-
-function toggleThemeMenu() {
-  document.getElementById('theme-wrap').classList.toggle('open');
-}
-
-// Close theme menu when clicking outside
-document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('theme-wrap');
-  if (!wrap.contains(e.target)) wrap.classList.remove('open');
-});
-
-// Watch OS preference change (works instantly for Auto mode)
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  if (current === 'auto') document.documentElement.setAttribute('data-theme', 'auto');
-});
-
-// Init on load
-(function initTheme() {
-  const saved = localStorage.getItem(THEME_KEY) || 'auto';
-  document.documentElement.setAttribute('data-theme', saved);
-  document.getElementById('theme-icon').textContent  = THEME_ICONS[saved];
-  document.getElementById('theme-label').textContent = THEME_LABELS[saved];
-  document.querySelectorAll('.theme-option').forEach(el => {
-    el.classList.toggle('active', el.getAttribute('data-t') === saved);
-  });
-})();
-
-
-/* ═══════════════════════════════
-   STATION DATA
-═══════════════════════════════ */
-
 const LINE_COLORS = {
-  'Red Line':       '#E63946',
-  'Yellow Line':    '#FFB703',
-  'Blue Line':      '#5BC0FF',
-  'Green Line':     '#2DC653',
-  'Violet Line':    '#B46EFF',
-  'Pink Line':      '#FF6EB8',
-  'Magenta Line':   '#FF6090',
-  'Airport Express':'#7EB8FF',
-  'Grey Line':      '#AAAAAA',
+  'Red Line': '#E63946',
+  'Yellow Line': '#FFB703',
+  'Blue Line': '#5BC0FF',
+  'Green Line': '#2DC653',
+  'Violet Line': '#B46EFF',
+  'Pink Line': '#FF6EB8',
+  'Magenta Line': '#FF6090',
+  'Airport Express': '#7EB8FF',
+  'Grey Line': '#AAAAAA',
 };
 
 const STATIONS = [
@@ -303,17 +246,13 @@ const STATIONS = [
 ];
 
 const POPULAR = [
-  {from:"Kashmere Gate",  to:"Rajiv Chowk"},
-  {from:"New Delhi",      to:"Hauz Khas"},
+  {from:"Kashmere Gate", to:"Rajiv Chowk"},
+  {from:"New Delhi", to:"Hauz Khas"},
   {from:"Dwarka Sector 21", to:"Noida City Centre"},
-  {from:"Jahangirpuri",   to:"Millennium City Centre Gurugram"},
-  {from:"Inderlok",       to:"Botanical Garden"},
+  {from:"Jahangirpuri", to:"HUDA City Centre"},
+  {from:"Inderlok", to:"Botanical Garden"},
   {from:"Dilshad Garden", to:"Rithala"},
 ];
-
-/* ═══════════════════════════════
-   APP LOGIC
-═══════════════════════════════ */
 
 let fromVal = '', toVal = '';
 
@@ -323,7 +262,10 @@ POPULAR.forEach(p => {
   const chip = document.createElement('div');
   chip.className = 'pick-chip';
   chip.innerHTML = `<span>📍</span>${p.from} → ${p.to}`;
-  chip.onclick = () => { setStation('from', p.from); setStation('to', p.to); };
+  chip.onclick = () => {
+    setStation('from', p.from);
+    setStation('to', p.to);
+  };
   picksGrid.appendChild(chip);
 });
 
@@ -341,25 +283,16 @@ function setStation(field, name) {
 }
 
 function checkBtn() {
-  document.getElementById('find-btn').disabled = !(fromVal.trim() && toVal.trim());
-}
-
-function highlight(text, q) {
-  const idx = text.toLowerCase().indexOf(q);
-  if (idx === -1) return text;
-  return text.slice(0, idx)
-    + `<strong style="color:var(--text)">${text.slice(idx, idx + q.length)}</strong>`
-    + text.slice(idx + q.length);
+  const btn = document.getElementById('find-btn');
+  btn.disabled = !(fromVal.trim() && toVal.trim());
 }
 
 function setupField(inputId, dropdownId, field) {
-  const input    = document.getElementById(inputId);
+  const input = document.getElementById(inputId);
   const dropdown = document.getElementById(dropdownId);
 
-  function render() {
+  function renderDropdown() {
     const q = input.value.trim().toLowerCase();
-
-    // Clear validated value when user edits
     if (field === 'from') fromVal = '';
     else toVal = '';
     checkBtn();
@@ -376,15 +309,15 @@ function setupField(inputId, dropdownId, field) {
       dropdown.appendChild(el);
     } else {
       matches.forEach(s => {
-        const color = LINE_COLORS[s.line] || '#aaa';
-        const item  = document.createElement('div');
+        const color = LINE_COLORS[s.line] || '#fff';
+        const item = document.createElement('div');
         item.className = 'dropdown-item';
-        item.innerHTML  = `
-          <span class="item-line-dot" style="background:${color};box-shadow:0 0 6px ${color}99"></span>
+        item.innerHTML = `
+          <span class="item-line-dot" style="background:${color};box-shadow:0 0 6px ${color}88"></span>
           <span class="item-name">${highlight(s.name, q)}</span>
           <span class="item-line-name">${s.line}</span>`;
-        // mousedown fires BEFORE blur, so selection works on mobile & desktop
-        item.addEventListener('mousedown', e => {
+        // Use mousedown so it fires before input loses focus
+        item.addEventListener('mousedown', (e) => {
           e.preventDefault();
           setStation(field, s.name);
         });
@@ -394,38 +327,53 @@ function setupField(inputId, dropdownId, field) {
     dropdown.classList.add('open');
   }
 
-  input.addEventListener('input', render);
-  input.addEventListener('focus', render);
-  input.addEventListener('blur',  () => setTimeout(() => dropdown.classList.remove('open'), 200));
+  input.addEventListener('input', renderDropdown);
+  input.addEventListener('focus', renderDropdown);
+
+  input.addEventListener('blur', () => {
+    setTimeout(() => dropdown.classList.remove('open'), 150);
+  });
+}
+
+function highlight(text, q) {
+  const idx = text.toLowerCase().indexOf(q);
+  if (idx === -1) return text;
+  return text.slice(0, idx) + `<strong style="color:#fff">${text.slice(idx, idx+q.length)}</strong>` + text.slice(idx+q.length);
 }
 
 setupField('from-input', 'from-dropdown', 'from');
-setupField('to-input',   'to-dropdown',   'to');
+setupField('to-input', 'to-dropdown', 'to');
 
 function swapStations() {
-  [fromVal, toVal] = [toVal, fromVal];
+  const tmp = fromVal;
+  fromVal = toVal;
+  toVal = tmp;
   document.getElementById('from-input').value = fromVal;
-  document.getElementById('to-input').value   = toVal;
+  document.getElementById('to-input').value = toVal;
   checkBtn();
 }
 
-/* ═══════════════════════════════
-   ROUTE POPUP
-═══════════════════════════════ */
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('route-popup')) closePopup();
+}
+
 
 function findRoute() {
   const from = document.getElementById('from-input').value.trim();
-  const to   = document.getElementById('to-input').value.trim();
+  const to = document.getElementById('to-input').value.trim();
   if (!from || !to) return;
 
+  // Set popup labels
   document.getElementById('popup-from').textContent = from;
-  document.getElementById('popup-to').textContent   = to;
+  document.getElementById('popup-to').textContent = to;
 
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(from + ' to ' + to + ' Delhi Metro route')}`;
-  const mapsUrl   = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
+  // Build URLs
+  const googleQuery = `${from} to ${to} Delhi Metro route`;
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
 
   document.getElementById('btn-google').onclick = () => { window.open(googleUrl, '_blank'); closePopup(); };
-  document.getElementById('btn-maps').onclick   = () => { window.open(mapsUrl,   '_blank'); closePopup(); };
+  document.getElementById('btn-maps').onclick = () => { window.open(mapsUrl, '_blank'); closePopup(); };
 
   document.getElementById('route-popup').classList.add('open');
 }
@@ -434,11 +382,11 @@ function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
 }
 
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('route-popup')) closePopup();
-}
-
-// Enter key shortcut
+// Also allow Enter key
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !document.getElementById('find-btn').disabled) findRoute();
+  if (e.key === 'Enter') {
+    const btn = document.getElementById('find-btn');
+    if (!btn.disabled) findRoute();
+  }
 });
+</script>
