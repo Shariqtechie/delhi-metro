@@ -353,36 +353,135 @@ function swapStations() {
   checkBtn();
 }
 
+// ── IMPORTANT: Replace this with your Cloudflare Worker URL after deploying ──
+const WORKER_URL = 'https://YOUR-WORKER-NAME.workers.dev';
+
 function handleOverlayClick(e) {
   if (e.target === document.getElementById('route-popup')) closePopup();
 }
 
+// Convert station name to URL slug e.g. "Kashmere Gate" → "kashmere-gate"
+function toSlug(name) {
+  return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
 
-function findRoute() {
+async function findRoute() {
   const from = document.getElementById('from-input').value.trim();
-  const to = document.getElementById('to-input').value.trim();
+  const to   = document.getElementById('to-input').value.trim();
   if (!from || !to) return;
 
-  // Set popup labels
-  document.getElementById('popup-from').textContent = from;
-  document.getElementById('popup-to').textContent = to;
+  // Show popup in loading state
+  showPopup({ loading: true, from, to });
 
-  // Build URLs
-  const googleQuery = `${from} to ${to} Delhi Metro route`;
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}`;
-  const mapsUrl = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
+  const fromSlug = toSlug(from);
+  const toSlug2  = toSlug(to);
 
-  document.getElementById('btn-google').onclick = () => { window.open(googleUrl, '_blank'); closePopup(); };
-  document.getElementById('btn-maps').onclick = () => { window.open(mapsUrl, '_blank'); closePopup(); };
+  try {
+    const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showPopup({ loading: false, from, to, data });
+  } catch (e) {
+    showPopup({ loading: false, from, to, error: true });
+  }
+}
 
-  document.getElementById('route-popup').classList.add('open');
+function showPopup({ loading, from, to, data, error }) {
+  const popup = document.getElementById('route-popup');
+  const box   = popup.querySelector('.popup-box');
+
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(from + ' to ' + to + ' Delhi Metro route')}`;
+  const mapsUrl   = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
+
+  if (loading) {
+    box.innerHTML = `
+      <button class="popup-close" onclick="closePopup()">✕</button>
+      <div class="popup-title">FINDING ROUTE</div>
+      <div class="popup-route"><strong>${from}</strong><br>↓<br><strong>${to}</strong></div>
+      <div class="popup-loading">
+        <div class="loading-spinner"></div>
+        <p>Fetching live data...</p>
+      </div>`;
+    popup.classList.add('open');
+    return;
+  }
+
+  if (error) {
+    box.innerHTML = `
+      <button class="popup-close" onclick="closePopup()">✕</button>
+      <div class="popup-title">OOPS!</div>
+      <div class="popup-route" style="margin-bottom:20px">Couldn't fetch route data. Try Google instead.</div>
+      <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank');closePopup()">
+        <div class="popup-btn-icon">🔍</div>
+        <div class="popup-btn-text">Google Search<span>Search this route online</span></div>
+      </button>
+      <button class="popup-btn btn-maps" onclick="window.open('${mapsUrl}','_blank');closePopup()">
+        <div class="popup-btn-icon">🗺️</div>
+        <div class="popup-btn-text">Google Maps<span>Live timings & directions</span></div>
+      </button>`;
+    return;
+  }
+
+  // Build segments info
+  let segHtml = '';
+  if (data.segments && data.segments.length > 0) {
+    segHtml = data.segments.map(s =>
+      `<div class="route-segment">🚇 <strong>${s.line}</strong> → ${s.towards} &nbsp;·&nbsp; Platform ${s.platform}</div>`
+    ).join('');
+  }
+
+  // Build station list
+  let stationsHtml = '';
+  if (data.stations && data.stations.length > 0) {
+    stationsHtml = `
+      <div class="station-list-wrap">
+        <div class="station-list-label">STOPS (${data.stations.length})</div>
+        <div class="station-list">
+          ${data.stations.map((s, i) => `
+            <div class="station-stop ${i === 0 ? 'stop-first' : i === data.stations.length-1 ? 'stop-last' : ''}">
+              <div class="stop-dot"></div>
+              <div class="stop-name">${s}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  box.innerHTML = `
+    <button class="popup-close" onclick="closePopup()">✕</button>
+    <div class="popup-title">YOUR ROUTE</div>
+
+    <div class="popup-route">
+      <strong>${from}</strong><br>↓<br><strong>${to}</strong>
+    </div>
+
+    <div class="route-stats">
+      ${data.fare       ? `<div class="route-stat"><div class="rs-val">${data.fare}</div><div class="rs-lbl">Fare</div></div>` : ''}
+      ${data.time       ? `<div class="route-stat"><div class="rs-val">${data.time}</div><div class="rs-lbl">Time</div></div>` : ''}
+      ${data.firstTrain ? `<div class="route-stat"><div class="rs-val">${data.firstTrain}</div><div class="rs-lbl">First</div></div>` : ''}
+      ${data.lastTrain  ? `<div class="route-stat"><div class="rs-val">${data.lastTrain}</div><div class="rs-lbl">Last</div></div>` : ''}
+    </div>
+
+    ${segHtml}
+    ${stationsHtml}
+
+    <div class="popup-actions">
+      <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
+        <div class="popup-btn-icon">🔍</div>
+        <div class="popup-btn-text">Google Search<span>More details online</span></div>
+      </button>
+      <button class="popup-btn btn-maps" onclick="window.open('${mapsUrl}','_blank')">
+        <div class="popup-btn-icon">🗺️</div>
+        <div class="popup-btn-text">Google Maps<span>Live timings & navigation</span></div>
+      </button>
+    </div>`;
+
+  popup.classList.add('open');
 }
 
 function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
 }
 
-// Also allow Enter key
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     const btn = document.getElementById('find-btn');

@@ -85,33 +85,9 @@
 
 </div>
 
-<!-- Route Options Popup -->
+<!-- Route Popup — filled dynamically by script.js -->
 <div class="popup-overlay" id="route-popup" onclick="handleOverlayClick(event)">
-  <div class="popup-box">
-    <button class="popup-close" onclick="closePopup()">✕</button>
-    <div class="popup-title">CHOOSE HOW TO VIEW</div>
-    <div class="popup-route">
-      <strong id="popup-from">—</strong><br>
-      ↓<br>
-      <strong id="popup-to">—</strong>
-    </div>
-
-    <button class="popup-btn btn-google" id="btn-google">
-      <div class="popup-btn-icon">🔍</div>
-      <div class="popup-btn-text">
-        Google Search
-        <span>See all results for this route</span>
-      </div>
-    </button>
-
-    <button class="popup-btn btn-maps" id="btn-maps">
-      <div class="popup-btn-icon">🗺️</div>
-      <div class="popup-btn-text">
-        Google Maps
-        <span>Live timings, fare &amp; directions</span>
-      </div>
-    </button>
-  </div>
+  <div class="popup-box"></div>
 </div>
 
 <script src="script.js"></script>
