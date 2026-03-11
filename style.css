@@ -767,3 +767,54 @@
 /* Bigger circles for overall first/last station */
 .stop-route-first .stop-circle,
 .stop-route-last  .stop-circle { width: 16px !important; height: 16px !important; }
+
+/* Route options picker */
+.route-options { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+
+.route-option-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  color: var(--text);
+  width: 100%;
+}
+.route-option-btn:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+}
+.ro-num { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; font-family: 'Bebas Neue', sans-serif; }
+.ro-lines { font-size: 13px; margin-bottom: 8px; }
+.ro-meta { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+.ro-meta span { background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 20px; }
+
+/* Route tabs */
+.route-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+
+.route-tab {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 10px 8px;
+  cursor: pointer;
+  color: var(--text);
+  text-align: center;
+  transition: all 0.2s;
+}
+.route-tab:hover { background: rgba(255,255,255,0.08); }
+.route-tab.active {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.35);
+}
+.tab-dots { display: flex; gap: 4px; justify-content: center; margin-bottom: 5px; }
+.tab-dot  { width: 10px; height: 10px; border-radius: 50%; }
+.tab-label { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+.tab-meta  { font-size: 10px; color: var(--muted); }
