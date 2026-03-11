@@ -1,4 +1,4 @@
-// ── DEBUG PANEL (remove this block when done testing) ──
+// ── DEBUG PANEL v7 (remove this block when done testing) ──
 const _dbg = document.createElement('div');
 _dbg.id = 'debug-panel';
 _dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:180px;overflow-y:auto;background:#0a0a0a;border-top:2px solid #E63946;font-family:monospace;font-size:11px;z-index:99999;padding:6px 10px;display:none';
