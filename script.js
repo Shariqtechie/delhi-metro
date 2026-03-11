@@ -413,6 +413,8 @@ async function findRoute() {
 
 function showPopup({ loading, from, to, data, error }) {
   const popup = document.getElementById('route-popup');
+  const fromSlug = toSlug(from);
+  const toSlug2  = toSlug(to);
   const box   = popup.querySelector('.popup-box');
 
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(from + ' to ' + to + ' Delhi Metro route')}`;
