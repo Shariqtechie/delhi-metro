@@ -516,6 +516,10 @@ function showPopup({ loading, from, to, data, error }) {
     <div class="route-map">${routeMapHtml}</div>
 
     <div class="popup-actions">
+      <button class="popup-btn btn-share" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')">
+        <div class="popup-btn-icon">🔗</div>
+        <div class="popup-btn-text">Share Route<span>Copy link to this route</span></div>
+      </button>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
@@ -528,6 +532,39 @@ function showPopup({ loading, from, to, data, error }) {
 
   popup.classList.add('open');
 }
+
+function shareRoute(fromSlug, toSlug, fromName, toName) {
+  const url = `${location.origin}${location.pathname}?from=${fromSlug}&to=${toSlug}`;
+  navigator.clipboard.writeText(url).then(() => {
+    dbg('🔗 Link copied: ' + url, '#4CAF50');
+    // Show toast
+    const toast = document.createElement('div');
+    toast.textContent = '🔗 Link copied!';
+    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#4CAF50;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:99999;font-family:DM Sans,sans-serif;';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  });
+}
+
+// Auto-fill from URL params e.g. ?from=kashmere-gate&to=hauz-khas
+(function() {
+  const params = new URLSearchParams(location.search);
+  const fromSlug = params.get('from');
+  const toSlug_param = params.get('to');
+  if (fromSlug && toSlug_param) {
+    // Match slug back to station name
+    const fromStation = STATIONS.find(s => toSlug(s.name) === fromSlug);
+    const toStation   = STATIONS.find(s => toSlug(s.name) === toSlug_param);
+    if (fromStation && toStation) {
+      document.getElementById('from-input').value = fromStation.name;
+      document.getElementById('to-input').value   = toStation.name;
+      fromVal = fromStation.name;
+      toVal   = toStation.name;
+      checkBtn();
+      setTimeout(findRoute, 500); // auto-search after page loads
+    }
+  }
+})();
 
 function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
