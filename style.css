@@ -798,3 +798,16 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+/* Bigger circles for overall first and last station */
+.stop-route-first .stop-circle,
+.stop-route-last  .stop-circle {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.stop-label-bold {
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+}
