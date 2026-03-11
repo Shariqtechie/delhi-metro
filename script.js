@@ -51,7 +51,7 @@ const STATIONS = [
   {name:"Central Secretariat",line:"Yellow Line"},
   {name:"Chandni Chowk",line:"Yellow Line"},
   {name:"Chawri Bazar",line:"Yellow Line"},
-  {name:"Chhatarpur",line:"Yellow Line"},
+  {name:"Chhattarpur",line:"Yellow Line"},
   {name:"Chirag Delhi",line:"Magenta Line"},
   {name:"Civil Lines",line:"Yellow Line"},
   {name:"Dabri Mor - Janakpuri South",line:"Magenta Line"},
