@@ -1,3 +1,23 @@
+// ── DEBUG PANEL (remove this block when done testing) ──
+const _dbg = document.createElement('div');
+_dbg.id = 'debug-panel';
+_dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:180px;overflow-y:auto;background:#0a0a0a;border-top:2px solid #E63946;font-family:monospace;font-size:11px;z-index:99999;padding:6px 10px;display:none';
+document.body.appendChild(_dbg);
+
+function dbg(msg, color) {
+  _dbg.style.display = 'block';
+  const line = document.createElement('div');
+  line.style.color = color || '#4CAF50';
+  line.style.borderBottom = '1px solid #222';
+  line.style.padding = '2px 0';
+  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  _dbg.appendChild(line);
+  _dbg.scrollTop = _dbg.scrollHeight;
+}
+
+window.addEventListener('error', e => dbg('❌ ' + e.message + ' (line ' + e.lineno + ')', '#E63946'));
+window.addEventListener('unhandledrejection', e => dbg('❌ Promise: ' + e.reason, '#E63946'));
+
 const LINE_COLORS = {
   'Red Line': '#E63946',
   'Yellow Line': '#FFB703',
@@ -293,6 +313,7 @@ function setupField(inputId, dropdownId, field) {
 
   function renderDropdown() {
     const q = input.value.trim().toLowerCase();
+    dbg('🔎 Search [' + field + ']: "' + q + '"', '#888');
     if (field === 'from') fromVal = '';
     else toVal = '';
     checkBtn();
@@ -369,19 +390,21 @@ async function findRoute() {
   const from = document.getElementById('from-input').value.trim();
   const to   = document.getElementById('to-input').value.trim();
   if (!from || !to) return;
-
-  // Show popup in loading state
+  dbg('🔍 Finding route: ' + from + ' → ' + to, '#FFB703');
   showPopup({ loading: true, from, to });
 
   const fromSlug = toSlug(from);
   const toSlug2  = toSlug(to);
+  dbg('📡 Fetching: ' + WORKER_URL + '/?from=' + fromSlug + '&to=' + toSlug2, '#888');
 
   try {
     const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
     const data = await res.json();
+    dbg('✅ Got data — stations:' + data.stations.length + ' segments:' + data.segments.length, '#4CAF50');
     if (data.error) throw new Error(data.error);
     showPopup({ loading: false, from, to, data });
   } catch (e) {
+    dbg('❌ Error: ' + e.message, '#E63946');
     showPopup({ loading: false, from, to, error: true });
   }
 }
