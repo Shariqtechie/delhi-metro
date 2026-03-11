@@ -402,6 +402,7 @@ async function findRoute() {
     const data = await res.json();
     dbg('✅ Got data — stations:' + data.stations.length + ' segments:' + data.segments.length, '#4CAF50');
     if (data.segments[0]) dbg('seg0 stations: ' + JSON.stringify(data.segments[0].stations), '#FFB703');
+    dbg('routeMap HTML len will be: checking...', '#888');
     if (data.error) throw new Error(data.error);
     showPopup({ loading: false, from, to, data });
   } catch (e) {
@@ -451,45 +452,43 @@ function showPopup({ loading, from, to, data, error }) {
   if (data.segments && data.segments.length > 0) {
     data.segments.forEach((seg, si) => {
       const color = seg.color || '#aaa';
-      // Segment header card
-      routeMapHtml += `
-        <div class="seg-card" style="border-left:3px solid ${color}">
-          <div class="seg-line" style="color:${color}">${seg.line}</div>
-          <div class="seg-towards">Towards ${seg.towards}</div>
-          <div class="seg-platform">Platform ${seg.platform}</div>
-        </div>
-        <div class="seg-stations">`;
 
+      let stopsHtml = '';
       seg.stations.forEach((station, i) => {
-        const isSegFirst  = i === 0;
-        const isSegLast   = i === seg.stations.length - 1;
         const isRouteFirst = si === 0 && i === 0;
         const isRouteLast  = si === data.segments.length - 1 && i === seg.stations.length - 1;
+        const isSegFirst   = i === 0;
+        const isSegLast    = i === seg.stations.length - 1;
 
-        let classes = 'route-stop';
-        if (isSegFirst)   classes += ' stop-first';
-        if (isSegLast)    classes += ' stop-last';
-        if (isRouteFirst) classes += ' stop-route-first';
-        if (isRouteLast)  classes += ' stop-route-last';
-
-        routeMapHtml += `
-          <div class="${classes}">
+        stopsHtml += `
+          <div class="route-stop ${isSegFirst ? 'stop-first' : ''} ${isSegLast ? 'stop-last' : ''}">
             <div class="stop-line-wrap">
               <div class="stop-line top" style="background:${color}"></div>
-              <div class="stop-circle" style="border-color:${color};${isRouteFirst || isRouteLast ? 'background:'+color : 'background:#1A1A26'}"></div>
+              <div class="stop-circle ${isRouteFirst || isRouteLast ? 'stop-circle-big' : ''}" style="border-color:${color};${isRouteFirst || isRouteLast ? 'background:'+color : 'background:#1A1A26'}"></div>
               <div class="stop-line bottom" style="background:${color}"></div>
             </div>
             <div class="stop-label ${isRouteFirst || isRouteLast ? 'stop-label-bold' : ''}">${station}</div>
           </div>`;
       });
 
-      routeMapHtml += `</div>`;
+      routeMapHtml += `
+        <div class="seg-row">
+          <div class="seg-card" style="border-left:3px solid ${color}">
+            <div class="seg-line-name" style="color:${color}">${seg.line}</div>
+            <div class="seg-towards">→ ${seg.towards}</div>
+            <div class="seg-platform">Platform ${seg.platform}</div>
+          </div>
+          <div class="seg-stations">${stopsHtml}</div>
+        </div>`;
 
-      // Interchange badge + repeat station at top of next segment
+      // Interchange badge
       if (seg.hasInterchangeAtEnd && si < data.segments.length - 1) {
-        const nextSeg     = data.segments[si + 1];
-        const nextColor   = nextSeg.color || '#aaa';
+        const nextSeg   = data.segments[si + 1];
+        const nextColor = nextSeg.color || '#aaa';
         const interchangeStation = seg.stations[seg.stations.length - 1];
+        if (!nextSeg.stations.includes(interchangeStation)) {
+          nextSeg.stations.unshift(interchangeStation);
+        }
         routeMapHtml += `
           <div class="interchange-badge">
             <div class="interchange-icon">🔄</div>
@@ -499,14 +498,9 @@ function showPopup({ loading, from, to, data, error }) {
             </div>
             <div class="interchange-arrow" style="color:${nextColor}">→ ${nextSeg.line}</div>
           </div>`;
-        // Add interchange station as first stop of next segment if not already there
-        if (!nextSeg.stations.includes(interchangeStation)) {
-          nextSeg.stations.unshift(interchangeStation);
-        }
       }
     });
   }
-
   box.innerHTML = `
     <button class="popup-close" onclick="closePopup()">✕</button>
     <div class="popup-title">YOUR ROUTE</div>
