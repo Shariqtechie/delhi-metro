@@ -401,6 +401,7 @@ async function findRoute() {
     const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
     const data = await res.json();
     dbg('✅ Got data — stations:' + data.stations.length + ' segments:' + data.segments.length, '#4CAF50');
+    if (data.segments[0]) dbg('seg0 stations: ' + JSON.stringify(data.segments[0].stations), '#FFB703');
     if (data.error) throw new Error(data.error);
     showPopup({ loading: false, from, to, data });
   } catch (e) {
