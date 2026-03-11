@@ -495,7 +495,7 @@ function showPopup({ loading, from, to, data, error }) {
     </div>`;
 
   popup.classList.add('open');
-
+}
 
 function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
