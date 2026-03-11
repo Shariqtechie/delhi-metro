@@ -818,3 +818,59 @@
 .tab-dot  { width: 10px; height: 10px; border-radius: 50%; }
 .tab-label { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
 .tab-meta  { font-size: 10px; color: var(--muted); }
+
+/* Share icon button */
+.popup-share-icon {
+  position: absolute;
+  top: 16px;
+  right: 52px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.popup-share-icon:hover { background: rgba(255,255,255,0.14); }
+
+/* Recent routes */
+#recent-routes {
+  margin: 12px 0 4px;
+  padding: 0 4px;
+}
+.recent-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  font-family: 'Bebas Neue', sans-serif;
+  margin-bottom: 8px;
+}
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.recent-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  transition: background 0.15s;
+  width: 100%;
+}
+.recent-chip:hover { background: rgba(255,255,255,0.08); }
+.rc-from { font-weight: 600; }
+.rc-arrow { color: var(--muted); font-size: 11px; }
+.rc-to   { color: var(--muted); }
