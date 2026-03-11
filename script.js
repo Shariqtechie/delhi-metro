@@ -51,7 +51,7 @@ const STATIONS = [
   {name:"Central Secretariat",line:"Yellow Line"},
   {name:"Chandni Chowk",line:"Yellow Line"},
   {name:"Chawri Bazar",line:"Yellow Line"},
-  {name:"Chhattarpur",line:"Yellow Line"},
+  {name:"Chhatarpur",line:"Yellow Line"},
   {name:"Chirag Delhi",line:"Magenta Line"},
   {name:"Civil Lines",line:"Yellow Line"},
   {name:"Dabri Mor - Janakpuri South",line:"Magenta Line"},
@@ -406,6 +406,9 @@ async function findRoute() {
     dbg('✅ Got ' + routes.length + ' route(s)', '#4CAF50');
     if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
 
+    // Save to recent routes
+    saveRecentRoute(from, to, fromSlug, toSlug2);
+
     showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
   } catch (e) {
     dbg('❌ Error: ' + e.message, '#E63946');
@@ -524,6 +527,7 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
 
   box.innerHTML = `
     <button class="popup-close" onclick="closePopup()">✕</button>
+    <button class="popup-share-icon" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')" title="Share Route">🔗</button>
     <div class="popup-title">YOUR ROUTE</div>
     <div class="popup-route"><strong>${from}</strong><span class="route-arrow">↓</span><strong>${to}</strong></div>
 
@@ -539,11 +543,7 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
     <div class="route-map">${routeMapHtml}</div>
 
     <div class="popup-actions">
-      <button class="popup-btn btn-share" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')">
-        <div class="popup-btn-icon">🔗</div>
-        <div class="popup-btn-text">Share Route<span>Copy link to this route</span></div>
-      </button>
-      <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
+<button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
       </button>
@@ -584,7 +584,9 @@ function shareRoute(fromSlug, toSlug, fromName, toName) {
       fromVal = fromStation.name;
       toVal   = toStation.name;
       checkBtn();
-      setTimeout(findRoute, 500); // auto-search after page loads
+      setTimeout(findRoute, 500);
+      // Clean URL so reload shows home page
+      history.replaceState(null, '', location.pathname); // auto-search after page loads
     }
   }
 })();
@@ -597,6 +599,50 @@ window.switchTab = function(i) {
   const { from, to, allRoutes } = window._tabRoutes;
   showPopup({ loading: false, from, to, data: allRoutes[i], allRoutes, activeTab: i });
 };
+
+// ── RECENT ROUTES ──
+function saveRecentRoute(from, to, fromSlug, toSlug) {
+  try {
+    let recent = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
+    // Remove duplicate if exists
+    recent = recent.filter(r => !(r.from === from && r.to === to));
+    recent.unshift({ from, to, fromSlug, toSlug });
+    recent = recent.slice(0, 5); // keep last 5
+    localStorage.setItem('dmrc_recent', JSON.stringify(recent));
+    renderRecentRoutes();
+  } catch(e) {}
+}
+
+function renderRecentRoutes() {
+  try {
+    const recent = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
+    const container = document.getElementById('recent-routes');
+    if (!container) return;
+    if (recent.length === 0) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="recent-label">RECENT</div>
+      <div class="recent-list">
+        ${recent.map(r => `
+          <button class="recent-chip" onclick="loadRecent('${r.from}','${r.to}')">
+            <span class="rc-from">${r.from}</span>
+            <span class="rc-arrow">→</span>
+            <span class="rc-to">${r.to}</span>
+          </button>`).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+window.loadRecent = function(from, to) {
+  document.getElementById('from-input').value = from;
+  document.getElementById('to-input').value   = to;
+  fromVal = from; toVal = to;
+  checkBtn();
+  findRoute();
+};
+
+// Init recent routes on load
+document.addEventListener('DOMContentLoaded', renderRecentRoutes);
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
