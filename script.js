@@ -460,24 +460,34 @@ function showPopup({ loading, from, to, data, error }) {
         <div class="seg-stations">`;
 
       seg.stations.forEach((station, i) => {
-        const isFirst = i === 0;
-        const isLast  = i === seg.stations.length - 1;
+        const isSegFirst  = i === 0;
+        const isSegLast   = i === seg.stations.length - 1;
+        const isRouteFirst = si === 0 && i === 0;
+        const isRouteLast  = si === data.segments.length - 1 && i === seg.stations.length - 1;
+
+        let classes = 'route-stop';
+        if (isSegFirst)   classes += ' stop-first';
+        if (isSegLast)    classes += ' stop-last';
+        if (isRouteFirst) classes += ' stop-route-first';
+        if (isRouteLast)  classes += ' stop-route-last';
+
         routeMapHtml += `
-          <div class="route-stop ${isFirst ? 'stop-first' : ''} ${isLast ? 'stop-last' : ''}">
+          <div class="${classes}">
             <div class="stop-line-wrap">
               <div class="stop-line top" style="background:${color}"></div>
-              <div class="stop-circle" style="background:${color};border-color:${color}"></div>
+              <div class="stop-circle" style="border-color:${color};${isRouteFirst || isRouteLast ? 'background:'+color : 'background:#1A1A26'}"></div>
               <div class="stop-line bottom" style="background:${color}"></div>
             </div>
-            <div class="stop-label">${station}</div>
+            <div class="stop-label ${isRouteFirst || isRouteLast ? 'stop-label-bold' : ''}">${station}</div>
           </div>`;
       });
 
       routeMapHtml += `</div>`;
 
-      // Interchange badge between segments
+      // Interchange badge + repeat station at top of next segment
       if (seg.hasInterchangeAtEnd && si < data.segments.length - 1) {
-        const nextColor = data.segments[si + 1].color || '#aaa';
+        const nextSeg     = data.segments[si + 1];
+        const nextColor   = nextSeg.color || '#aaa';
         const interchangeStation = seg.stations[seg.stations.length - 1];
         routeMapHtml += `
           <div class="interchange-badge">
@@ -486,8 +496,12 @@ function showPopup({ loading, from, to, data, error }) {
               <strong>Change Train</strong>
               <span>at ${interchangeStation}</span>
             </div>
-            <div class="interchange-arrow" style="color:${nextColor}">→ ${data.segments[si+1].line}</div>
+            <div class="interchange-arrow" style="color:${nextColor}">→ ${nextSeg.line}</div>
           </div>`;
+        // Add interchange station as first stop of next segment if not already there
+        if (!nextSeg.stations.includes(interchangeStation)) {
+          nextSeg.stations.unshift(interchangeStation);
+        }
       }
     });
   }
