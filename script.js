@@ -170,7 +170,7 @@ const STATIONS = [
   {name:"New Delhi",line:"Yellow Line"},
   {name:"NHPC Chowk",line:"Violet Line"},
   {name:"Nirman Vihar",line:"Blue Line"},
-  {name:"Noida City Centre",line:"Blue Line"},
+  {name:"Noida City Center",line:"Blue Line"},
   {name:"Noida Electronic City",line:"Blue Line"},
   {name:"Noida Sector 15",line:"Blue Line"},
   {name:"Noida Sector 16",line:"Blue Line"},
