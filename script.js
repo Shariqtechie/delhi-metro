@@ -31,7 +31,7 @@ const STATIONS = [
   {name:"Central Secretariat",line:"Yellow Line"},
   {name:"Chandni Chowk",line:"Yellow Line"},
   {name:"Chawri Bazar",line:"Yellow Line"},
-  {name:"Chhattarpur",line:"Yellow Line"},
+  {name:"Chhatarpur",line:"Yellow Line"},
   {name:"Chirag Delhi",line:"Magenta Line"},
   {name:"Civil Lines",line:"Yellow Line"},
   {name:"Dabri Mor - Janakpuri South",line:"Magenta Line"},
@@ -422,37 +422,57 @@ function showPopup({ loading, from, to, data, error }) {
     return;
   }
 
-  // Build segments info
-  let segHtml = '';
+  // ── Build visual route map
+  let routeMapHtml = '';
   if (data.segments && data.segments.length > 0) {
-    segHtml = data.segments.map(s =>
-      `<div class="route-segment">🚇 <strong>${s.line}</strong> → ${s.towards} &nbsp;·&nbsp; Platform ${s.platform}</div>`
-    ).join('');
-  }
-
-  // Build station list
-  let stationsHtml = '';
-  if (data.stations && data.stations.length > 0) {
-    stationsHtml = `
-      <div class="station-list-wrap">
-        <div class="station-list-label">STOPS (${data.stations.length})</div>
-        <div class="station-list">
-          ${data.stations.map((s, i) => `
-            <div class="station-stop ${i === 0 ? 'stop-first' : i === data.stations.length-1 ? 'stop-last' : ''}">
-              <div class="stop-dot"></div>
-              <div class="stop-name">${s}</div>
-            </div>`).join('')}
+    data.segments.forEach((seg, si) => {
+      const color = seg.color || '#aaa';
+      // Segment header card
+      routeMapHtml += `
+        <div class="seg-card" style="border-left:3px solid ${color}">
+          <div class="seg-line" style="color:${color}">${seg.line}</div>
+          <div class="seg-towards">Towards ${seg.towards}</div>
+          <div class="seg-platform">Platform ${seg.platform}</div>
         </div>
-      </div>`;
+        <div class="seg-stations">`;
+
+      seg.stations.forEach((station, i) => {
+        const isFirst = i === 0;
+        const isLast  = i === seg.stations.length - 1;
+        routeMapHtml += `
+          <div class="route-stop ${isFirst ? 'stop-first' : ''} ${isLast ? 'stop-last' : ''}">
+            <div class="stop-line-wrap">
+              <div class="stop-line top" style="background:${color}"></div>
+              <div class="stop-circle" style="background:${color};border-color:${color}"></div>
+              <div class="stop-line bottom" style="background:${color}"></div>
+            </div>
+            <div class="stop-label">${station}</div>
+          </div>`;
+      });
+
+      routeMapHtml += `</div>`;
+
+      // Interchange badge between segments
+      if (seg.hasInterchangeAtEnd && si < data.segments.length - 1) {
+        const nextColor = data.segments[si + 1].color || '#aaa';
+        const interchangeStation = seg.stations[seg.stations.length - 1];
+        routeMapHtml += `
+          <div class="interchange-badge">
+            <div class="interchange-icon">🔄</div>
+            <div class="interchange-text">
+              <strong>Change Train</strong>
+              <span>at ${interchangeStation}</span>
+            </div>
+            <div class="interchange-arrow" style="color:${nextColor}">→ ${data.segments[si+1].line}</div>
+          </div>`;
+      }
+    });
   }
 
   box.innerHTML = `
     <button class="popup-close" onclick="closePopup()">✕</button>
     <div class="popup-title">YOUR ROUTE</div>
-
-    <div class="popup-route">
-      <strong>${from}</strong><br>↓<br><strong>${to}</strong>
-    </div>
+    <div class="popup-route"><strong>${from}</strong><span class="route-arrow">↓</span><strong>${to}</strong></div>
 
     <div class="route-stats">
       ${data.fare       ? `<div class="route-stat"><div class="rs-val">${data.fare}</div><div class="rs-lbl">Fare</div></div>` : ''}
@@ -461,8 +481,7 @@ function showPopup({ loading, from, to, data, error }) {
       ${data.lastTrain  ? `<div class="route-stat"><div class="rs-val">${data.lastTrain}</div><div class="rs-lbl">Last</div></div>` : ''}
     </div>
 
-    ${segHtml}
-    ${stationsHtml}
+    <div class="route-map">${routeMapHtml}</div>
 
     <div class="popup-actions">
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
@@ -476,7 +495,7 @@ function showPopup({ loading, from, to, data, error }) {
     </div>`;
 
   popup.classList.add('open');
-}
+
 
 function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
