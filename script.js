@@ -399,19 +399,21 @@ async function findRoute() {
 
   try {
     const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
-    const data = await res.json();
-    dbg('✅ Got data — stations:' + data.stations.length + ' segments:' + data.segments.length, '#4CAF50');
-    if (data.segments[0]) dbg('seg0 stations: ' + JSON.stringify(data.segments[0].stations), '#FFB703');
-    dbg('routeMap HTML len will be: checking...', '#888');
-    if (data.error) throw new Error(data.error);
-    showPopup({ loading: false, from, to, data });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    const routes = json.routes || [];
+    dbg('✅ Got ' + routes.length + ' route(s)', '#4CAF50');
+    if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
+
+    showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
   } catch (e) {
     dbg('❌ Error: ' + e.message, '#E63946');
     showPopup({ loading: false, from, to, error: true });
   }
 }
 
-function showPopup({ loading, from, to, data, error }) {
+function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 }) {
   const popup = document.getElementById('route-popup');
   const fromSlug = toSlug(from);
   const toSlug2  = toSlug(to);
@@ -503,10 +505,29 @@ function showPopup({ loading, from, to, data, error }) {
       }
     });
   }
+    // Build tabs if multiple routes
+  const hasMultiple = allRoutes && allRoutes.length > 1;
+  const tabsHtml = hasMultiple ? (() => {
+    return '<div class="route-tabs">' + allRoutes.map((r, i) => {
+      const changes = r.segments.length - 1;
+      const label = changes === 0 ? 'Direct' : changes + ' change' + (changes > 1 ? 's' : '');
+      const dots = r.segments.map(s => `<span class="tab-dot" style="background:${s.color}"></span>`).join('');
+      return `<button class="route-tab ${i === activeTab ? 'active' : ''}" onclick="switchTab(${i})">
+        <div class="tab-dots">${dots}</div>
+        <div class="tab-label">Route ${i + 1}</div>
+        <div class="tab-meta">${label} · ${r.stations.length} stops</div>
+      </button>`;
+    }).join('') + '</div>';
+  })() : '';
+
+  if (hasMultiple) window._tabRoutes = { from, to, allRoutes };
+
   box.innerHTML = `
     <button class="popup-close" onclick="closePopup()">✕</button>
     <div class="popup-title">YOUR ROUTE</div>
     <div class="popup-route"><strong>${from}</strong><span class="route-arrow">↓</span><strong>${to}</strong></div>
+
+    ${tabsHtml}
 
     <div class="route-stats">
       ${data.fare       ? `<div class="route-stat"><div class="rs-val">${data.fare}</div><div class="rs-lbl">Fare</div></div>` : ''}
@@ -571,6 +592,11 @@ function shareRoute(fromSlug, toSlug, fromName, toName) {
 function closePopup() {
   document.getElementById('route-popup').classList.remove('open');
 }
+
+window.switchTab = function(i) {
+  const { from, to, allRoutes } = window._tabRoutes;
+  showPopup({ loading: false, from, to, data: allRoutes[i], allRoutes, activeTab: i });
+};
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
