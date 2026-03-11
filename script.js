@@ -155,15 +155,28 @@ function toSlug(name) {
   return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
+// ── ROUTE CACHE (in-memory, clears on reload) ──
+const routeCache = {};
+
 async function findRoute() {
   const from = document.getElementById('from-input').value.trim();
   const to   = document.getElementById('to-input').value.trim();
   if (!from || !to) return;
-  dbg('🔍 Finding route: ' + from + ' → ' + to, '#FFB703');
-  showPopup({ loading: true, from, to });
 
   const fromSlug = toSlug(from);
   const toSlug2  = toSlug(to);
+  const cacheKey = fromSlug + '|' + toSlug2;
+
+  // Check cache first
+  if (routeCache[cacheKey]) {
+    dbg('⚡ Cache hit: ' + from + ' → ' + to, '#4CAF50');
+    const routes = routeCache[cacheKey];
+    showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
+    return;
+  }
+
+  dbg('🔍 Finding route: ' + from + ' → ' + to, '#FFB703');
+  showPopup({ loading: true, from, to });
   dbg('📡 Fetching: ' + WORKER_URL + '/?from=' + fromSlug + '&to=' + toSlug2, '#888');
 
   try {
@@ -174,6 +187,9 @@ async function findRoute() {
     const routes = json.routes || [];
     dbg('✅ Got ' + routes.length + ' route(s)', '#4CAF50');
     if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
+
+    // Save to cache
+    routeCache[cacheKey] = routes;
 
     // Save to recent routes
     saveRecentRoute(from, to, fromSlug, toSlug2);
