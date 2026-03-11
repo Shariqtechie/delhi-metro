@@ -668,9 +668,7 @@
    VISUAL ROUTE MAP
 ═══════════════════════════════ */
 
-.route-map {
-  margin: 16px 0;
-}
+.route-map { margin: 16px 0; }
 
 .popup-route {
   display: flex;
@@ -681,53 +679,43 @@
   font-size: 14px;
   font-weight: 600;
 }
+.route-arrow { color: var(--muted); font-size: 16px; margin: 2px 0; }
 
-.route-arrow {
-  color: var(--muted);
-  font-size: 16px;
-  margin: 2px 0;
+/* Two-column row: card left, stations right */
+.seg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 0;
 }
 
-/* Segment info card */
 .seg-card {
+  flex-shrink: 0;
+  width: 130px;
   background: rgba(255,255,255,0.04);
   border-radius: 0 10px 10px 0;
-  padding: 10px 14px;
-  margin: 8px 0 4px 20px;
-}
-
-.seg-line {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 16px;
-  letter-spacing: 1px;
-}
-
-.seg-towards {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.seg-platform {
+  padding: 8px 10px;
+  margin-top: 10px;
   font-size: 11px;
-  color: var(--muted);
-  margin-top: 1px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
 }
+.seg-line-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+.seg-towards { color: var(--muted); font-size: 10px; margin-bottom: 2px; }
+.seg-platform { color: var(--muted); font-size: 10px; font-weight: 700; }
 
-/* Station stops */
-.seg-stations {
-  padding-left: 0;
-}
+/* Stations column */
+.seg-stations { flex: 1; }
 
 .route-stop {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 36px;
   font-size: 13px;
-  color: var(--text);
 }
 
 .stop-line-wrap {
@@ -738,41 +726,25 @@
   flex-shrink: 0;
   align-self: stretch;
 }
-
-.stop-line {
-  flex: 1;
-  width: 2px;
-  min-height: 8px;
-}
-
-.stop-line.top  { }
-.stop-line.bottom { }
-
-.route-stop.stop-first .stop-line.top   { background: transparent !important; }
+.stop-line { flex: 1; width: 2px; min-height: 6px; }
+.route-stop.stop-first .stop-line.top    { background: transparent !important; }
 .route-stop.stop-last  .stop-line.bottom { background: transparent !important; }
 
 .stop-circle {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid;
-  background: #1A1A26 !important;
   flex-shrink: 0;
   z-index: 1;
 }
-
-.route-stop.stop-first .stop-circle,
-.route-stop.stop-last  .stop-circle {
-  width: 14px;
-  height: 14px;
-  background: var(--card) !important;
+.stop-circle-big {
+  width: 15px !important;
+  height: 15px !important;
 }
 
-.stop-label {
-  flex: 1;
-  padding: 8px 0;
-  line-height: 1.3;
-}
+.stop-label { flex: 1; padding: 8px 0; line-height: 1.3; }
+.stop-label-bold { font-weight: 700; color: #fff; font-size: 14px; }
 
 /* Interchange badge */
 .interchange-badge {
@@ -783,31 +755,15 @@
   border: 1px solid rgba(255,200,50,0.2);
   border-radius: 10px;
   padding: 10px 14px;
-  margin: 8px 0;
+  margin: 6px 0;
   font-size: 13px;
 }
-
 .interchange-icon { font-size: 18px; flex-shrink: 0; }
-
 .interchange-text { flex: 1; }
 .interchange-text strong { color: #FFD700; font-size: 13px; display: block; }
 .interchange-text span   { color: var(--muted); font-size: 11px; }
+.interchange-arrow { font-size: 11px; font-weight: 700; white-space: nowrap; }
 
-.interchange-arrow {
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-/* Bigger circles for overall first and last station */
+/* Bigger circles for overall first/last station */
 .stop-route-first .stop-circle,
-.stop-route-last  .stop-circle {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.stop-label-bold {
-  font-weight: 700;
-  color: #fff;
-  font-size: 14px;
-}
+.stop-route-last  .stop-circle { width: 16px !important; height: 16px !important; }
