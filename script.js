@@ -639,17 +639,19 @@ async function fetchOSMStationCoords(lat, lon) {
 // Cache: { walk: [...results], drive: [...results] }
 
 async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon) {
-  // OSRM has separate servers for foot vs car
   const url = mode === 'walk'
     ? `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromLon},${fromLat};${toLon},${toLat}?overview=false`
     : `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
   const res = await fetch(url);
   const data = await res.json();
   if (data.routes && data.routes[0]) {
-    return {
-      km: (data.routes[0].distance / 1000).toFixed(1),
-      mins: Math.round(data.routes[0].duration / 60)
-    };
+    const km = data.routes[0].distance / 1000;
+    // Use realistic Delhi speeds instead of OSRM's estimates:
+    // Walking: 5.5 km/h | Driving in Delhi traffic: 20 km/h avg
+    const mins = mode === 'walk'
+      ? Math.round((km / 5.5) * 60)
+      : Math.round((km / 20) * 60);
+    return { km: km.toFixed(1), mins };
   }
   return null;
 }
