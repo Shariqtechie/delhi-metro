@@ -44,15 +44,44 @@
 
   <div class="card">
 
-    <!-- Near Me -->
-    <button class="near-me-btn" id="near-me-btn" onclick="findNearbyStations()">
-      📍 Use My Location
-    </button>
-    <div id="nearby-list" style="display:none"></div>
+    <!-- Nearby Popup -->
+    <div class="nearby-popup-overlay" id="nearby-overlay" onclick="closeNearbyPopup(event)">
+      <div class="nearby-popup" id="nearby-popup">
+        <div class="nearby-popup-header">
+          <div class="nearby-popup-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+            Nearest Stations
+          </div>
+          <button class="nearby-popup-close" onclick="closeNearbyPopup()">✕</button>
+        </div>
+        <div class="nearby-mode-tabs">
+          <button class="nearby-tab active" id="tab-walk" onclick="setNearbyMode('walk')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1.5"/><path d="M9 19l1.5-6L8 11l2-5"/><path d="M15 19l-1.5-6L16 11l-2-5"/><path d="M8 11l-2 2M16 11l2 2"/></svg>
+            Walk
+          </button>
+          <button class="nearby-tab" id="tab-drive" onclick="setNearbyMode('drive')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h13l4 4v4a2 2 0 0 1-2 2h-1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+            Drive
+          </button>
+        </div>
+        <div id="nearby-results">
+          <div class="nearby-loading">
+            <div class="nearby-spinner"></div>
+            Getting your location...
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- FROM -->
     <div class="field-group">
-      <div class="field-label"><span class="dot dot-from"></span> From Station</div>
+      <div class="field-label">
+        <span class="dot dot-from"></span> From Station
+        <button class="nearby-icon-btn" id="near-me-btn" onclick="findNearbyStations()" title="Find nearest metro stations">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><path d="M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/></svg>
+          <span class="nearby-tooltip">Nearest stations</span>
+        </button>
+      </div>
       <div class="input-wrap">
         <span class="input-icon">📍</span>
         <input type="text" id="from-input" placeholder="e.g. Kashmere Gate" autocomplete="off" />
