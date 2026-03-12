@@ -511,9 +511,37 @@ window.switchTab = function(i) {
 };
 
 // ── SAVED ROUTES ──
+// In-memory backup for saved/recent (survives localStorage wipes during session)
+let _savedMem = null;
+let _recentMem = null;
+
+function getSaved() {
+  try {
+    const s = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    _savedMem = s;
+    return s;
+  } catch(e) { return _savedMem || []; }
+}
+function setSaved(arr) {
+  _savedMem = arr;
+  try { localStorage.setItem('dmrc_saved', JSON.stringify(arr)); } catch(e) {}
+}
+function getRecent() {
+  try {
+    const s = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
+    _recentMem = s;
+    return s;
+  } catch(e) { return _recentMem || []; }
+}
+function setRecent(arr) {
+  _recentMem = arr;
+  try { localStorage.setItem('dmrc_recent', JSON.stringify(arr)); } catch(e) {}
+}
+
+
 function toggleSaveRoute(from, to, fromSlug, toSlug) {
   try {
-    let saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    let saved = getSaved();
     const exists = saved.findIndex(r => r.from === from && r.to === to);
     if (exists > -1) {
       saved.splice(exists, 1);
@@ -521,7 +549,7 @@ function toggleSaveRoute(from, to, fromSlug, toSlug) {
       saved.unshift({ from, to, fromSlug, toSlug });
       saved = saved.slice(0, 10);
     }
-    localStorage.setItem('dmrc_saved', JSON.stringify(saved));
+    setSaved(saved);
     renderSavedRoutes();
     updateSaveBtn(from, to);
   } catch(e) {}
@@ -529,7 +557,7 @@ function toggleSaveRoute(from, to, fromSlug, toSlug) {
 
 function isRouteSaved(from, to) {
   try {
-    const saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    const saved = getSaved();
     return saved.some(r => r.from === from && r.to === to);
   } catch(e) { return false; }
 }
@@ -544,7 +572,7 @@ function updateSaveBtn(from, to) {
 
 function renderSavedRoutes() {
   try {
-    const saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    const saved = getSaved();
     const container = document.getElementById('saved-routes');
     if (!container) return;
     if (saved.length === 0) { container.style.display = 'none'; return; }
@@ -566,19 +594,19 @@ function renderSavedRoutes() {
 
 function saveRecentRoute(from, to, fromSlug, toSlug) {
   try {
-    let recent = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
+    let recent = getRecent();
     // Remove duplicate if exists
     recent = recent.filter(r => !(r.from === from && r.to === to));
     recent.unshift({ from, to, fromSlug, toSlug });
     recent = recent.slice(0, 5); // keep last 5
-    localStorage.setItem('dmrc_recent', JSON.stringify(recent));
+    setRecent(recent);
     renderRecentRoutes();
   } catch(e) {}
 }
 
 function renderRecentRoutes() {
   try {
-    const recent = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
+    const recent = getRecent();
     const container = document.getElementById('recent-routes');
     if (!container) return;
     if (recent.length === 0) { container.style.display = 'none'; return; }
@@ -766,7 +794,7 @@ function findNearbyStations() {
                   err.code === 2 ? 'Location unavailable' : 'Location timed out';
       document.getElementById('nearby-results').innerHTML = `<div class="nearby-empty">⚠️ ${msg}</div>`;
     },
-    { timeout: 8000, maximumAge: 60000 }
+    { timeout: 15000, maximumAge: 120000, enableHighAccuracy: false }
   );
 }
 
