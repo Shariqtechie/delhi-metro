@@ -613,13 +613,26 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 async function fetchOSMStationCoords(lat, lon) {
   const query = `[out:json][timeout:15];node["railway"="station"]["network"="Delhi Metro"](around:10000,${lat},${lon});out;`;
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  return data.elements.map(e => ({
-    name: e.tags.name || e.tags['name:en'] || '',
-    lat: e.lat, lon: e.lon
-  })).filter(e => e.name);
+  // Try multiple Overpass mirrors — some browsers block certain ones
+  const mirrors = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+  ];
+  for (const mirror of mirrors) {
+    try {
+      const res = await fetch(`${mirror}?data=${encodeURIComponent(query)}`);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.elements) {
+        return data.elements.map(e => ({
+          name: e.tags.name || e.tags['name:en'] || '',
+          lat: e.lat, lon: e.lon
+        })).filter(e => e.name);
+      }
+    } catch(e) { continue; }
+  }
+  throw new Error('All Overpass mirrors failed');
 }
 
 async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon) {
