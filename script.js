@@ -158,9 +158,31 @@ function swapStations() {
 // ── IMPORTANT: Replace this with your Cloudflare Worker URL after deploying ──
 const WORKER_URL = 'https://delhi-metro-worker.shariqahmad129.workers.dev';
 
-function handleOverlayClick(e) {
-  if (e.target === document.getElementById('route-popup')) closePopup();
+function openRouteView() {
+  const view = document.getElementById('route-view');
+  const wrapper = document.querySelector('.wrapper');
+  view.classList.add('open');
+  wrapper.classList.add('hidden');
+  document.querySelector('.blob.blob-1') && document.querySelectorAll('.blob').forEach(b => b.style.display = 'none');
+  // Push state so back button works
+  history.pushState({ routeView: true }, '');
 }
+
+function closeRouteView() {
+  const view = document.getElementById('route-view');
+  const wrapper = document.querySelector('.wrapper');
+  view.classList.remove('open');
+  wrapper.classList.remove('hidden');
+  document.querySelectorAll('.blob').forEach(b => b.style.display = '');
+}
+
+// Handle browser back button
+window.addEventListener('popstate', function(e) {
+  const view = document.getElementById('route-view');
+  if (view.classList.contains('open')) {
+    closeRouteView();
+  }
+});
 
 // Convert station name to URL slug — use precomputed slug from STATIONS array
 function toSlug(name) {
@@ -233,30 +255,30 @@ async function findRoute() {
 }
 
 function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 }) {
-  const popup = document.getElementById('route-popup');
+  const popup = document.getElementById('route-view');
   const fromSlug = toSlug(from);
   const toSlug2  = toSlug(to);
-  const box   = popup.querySelector('.popup-box');
+  const box   = document.getElementById('route-view-inner');
 
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(from + ' to ' + to + ' Delhi Metro route')}`;
   const mapsUrl   = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
 
   if (loading) {
     box.innerHTML = `
-      <button class="popup-close" onclick="closePopup()">✕</button>
+      <button class="popup-close" onclick="closePopup()">← Back</button>
       <div class="popup-title">FINDING ROUTE</div>
       <div class="popup-route"><strong>${from}</strong><br>↓<br><strong>${to}</strong></div>
       <div class="popup-loading">
         <div class="loading-spinner"></div>
         <p>Fetching live data...</p>
       </div>`;
-    popup.classList.add('open');
+    openRouteView();
     return;
   }
 
   if (error) {
     box.innerHTML = `
-      <button class="popup-close" onclick="closePopup()">✕</button>
+      <button class="popup-close" onclick="closePopup()">← Back</button>
       <div class="popup-title">OOPS!</div>
       <div class="popup-route" style="margin-bottom:20px">Couldn't fetch route data. Try Google instead.</div>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank');closePopup()">
@@ -342,8 +364,10 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
   if (hasMultiple) window._tabRoutes = { from, to, allRoutes };
 
   box.innerHTML = `
-    <button class="popup-close" onclick="closePopup()">✕</button>
-    <button class="popup-share-icon" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')" title="Share Route">🔗</button>
+    <div class="route-view-nav">
+      <button class="popup-close" onclick="closePopup()">← Back</button>
+      <button class="popup-share-icon" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')" title="Share Route">🔗</button>
+    </div>
     <div class="popup-title">YOUR ROUTE</div>
     <div class="popup-route"><strong>${from}</strong><span class="route-arrow">↓</span><strong>${to}</strong></div>
 
@@ -369,7 +393,7 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
       </button>
     </div>`;
 
-  popup.classList.add('open');
+  openRouteView();
 }
 
 function shareRoute(fromSlug, toSlug, fromName, toName) {
@@ -412,9 +436,7 @@ function shareRoute(fromSlug, toSlug, fromName, toName) {
   }
 })();
 
-function closePopup() {
-  document.getElementById('route-popup').classList.remove('open');
-}
+function closePopup() { closeRouteView(); }
 
 window.switchTab = function(i) {
   const { from, to, allRoutes } = window._tabRoutes;
