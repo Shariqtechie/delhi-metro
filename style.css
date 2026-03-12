@@ -428,99 +428,59 @@
   }
 
   /* Popup overlay */
-  .popup-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(8px);
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-    padding: 20px;
-  }
-  .popup-overlay.open { opacity: 1; pointer-events: all; }
-  .popup-box {
-    background: #16161F;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 24px;
-    padding: 32px 28px 28px;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.7);
-    transform: translateY(20px) scale(0.97);
-    transition: transform 0.25s;
-    position: relative;
-  }
-  .popup-overlay.open .popup-box { transform: translateY(0) scale(1); }
-  .popup-close {
-    position: absolute;
-    top: 14px; right: 16px;
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px;
-    transition: color 0.15s;
-  }
-  .popup-close:hover { color: #fff; }
-  .popup-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 2px;
-    margin-bottom: 6px;
-    color: #fff;
-  }
-  .popup-route {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 24px;
-    line-height: 1.8;
-  }
-  .popup-route strong { color: #ccd; }
-  .popup-btn {
-    width: 100%;
-    padding: 15px 18px;
-    border-radius: 14px;
-    border: none;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.2s;
-    text-align: left;
-    margin-bottom: 10px;
-  }
-  .popup-btn:last-child { margin-bottom: 0; }
-  .popup-btn-icon {
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; flex-shrink: 0;
-  }
-  .popup-btn-text { flex: 1; }
-  .popup-btn-text span { display: block; font-size: 11px; font-weight: 400; opacity: 0.6; margin-top: 1px; }
-  .btn-google {
-    background: rgba(255,255,255,0.05);
-    color: #fff;
-    border: 1px solid rgba(255,255,255,0.08);
-  }
-  .btn-google:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
-  .btn-google .popup-btn-icon { background: rgba(66,133,244,0.2); }
-  .btn-maps {
-    background: linear-gradient(135deg, var(--blue), var(--violet));
-    color: #fff;
-    box-shadow: 0 6px 24px rgba(0,119,182,0.35);
-  }
-  .btn-maps:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,119,182,0.5); }
-  .btn-maps .popup-btn-icon { background: rgba(255,255,255,0.15); }
+  .route-view {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 999;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.route-view.open {
+  transform: translateY(0);
+}
+
+.wrapper.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.route-view-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 20px 60px;
+  min-height: 100vh;
+}
+
+/* Back button replaces close button */
+.popup-close {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  transition: background 0.2s;
+}
+.popup-close:hover { background: rgba(255,255,255,0.12); }
+
+.popup-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+
 /* ═══════════════════════════════
    ROUTE RESULT POPUP EXTRAS
 ═══════════════════════════════ */
@@ -898,3 +858,30 @@
   z-index: 5;
 }
 .field-clear:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* Route view nav bar */
+.route-view-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.popup-share-icon {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  position: static;
+  transform: none;
+  top: auto;
+  right: auto;
+}
+.popup-share-icon:hover { background: rgba(255,255,255,0.14); }
