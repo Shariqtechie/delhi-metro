@@ -1074,3 +1074,82 @@
   color: #FFD700;
   font-size: 11px;
 }
+
+/* ═══════════════════════════════
+   NEAR ME / GPS
+═══════════════════════════════ */
+.near-me-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(91,192,255,0.08);
+  border: 1px dashed rgba(91,192,255,0.35);
+  border-radius: 12px;
+  padding: 11px 16px;
+  color: #5BC0FF;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.near-me-btn:hover { background: rgba(91,192,255,0.14); border-color: rgba(91,192,255,0.5); }
+.near-me-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+#nearby-list { margin-bottom: 14px; }
+
+.nearby-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  font-family: 'Bebas Neue', sans-serif;
+  margin-bottom: 8px;
+}
+
+.nearby-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nearby-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.15s;
+}
+.nearby-item:hover { background: rgba(255,255,255,0.08); }
+
+.nearby-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nearby-name { flex: 1; font-weight: 500; }
+
+.nearby-km {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.nearby-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 4px;
+}
