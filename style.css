@@ -1000,7 +1000,8 @@
 /* Landscape / wide screen: side by side */
 @media (min-width: 700px), (orientation: landscape) and (max-height: 500px) {
   .route-view-inner {
-    max-width: 900px;
+    max-width: 860px;
+    padding: 24px 32px 60px;
   }
 
   .route-body {
@@ -1015,9 +1016,21 @@
   }
 
   .gates-side {
-    width: 260px;
+    width: 240px;
     flex-shrink: 0;
     position: sticky;
     top: 20px;
+  }
+
+  .popup-actions {
+    max-width: 480px;
+  }
+
+  .route-tabs {
+    max-width: 480px;
+  }
+
+  .route-stats {
+    justify-content: flex-start;
   }
 }
