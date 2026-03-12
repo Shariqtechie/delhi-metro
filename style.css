@@ -798,11 +798,15 @@
 }
 .popup-share-icon:hover { background: rgba(255,255,255,0.14); }
 
-/* Recent routes */
+/* Recent + Saved routes */
+#saved-routes,
 #recent-routes {
-  margin: 12px 0 4px;
+  margin: 0;
   padding: 0 4px;
 }
+
+#saved-routes { margin-top: 28px; }
+#recent-routes { margin-top: 20px; }
 .recent-label {
   font-size: 10px;
   color: var(--muted);
