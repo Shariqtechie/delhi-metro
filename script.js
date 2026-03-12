@@ -153,6 +153,12 @@ function swapStations() {
   document.getElementById('from-input').value = fromVal;
   document.getElementById('to-input').value = toVal;
   checkBtn();
+  // Update URL if both fields filled
+  if (fromVal && toVal) {
+    const fs = toSlug(fromVal);
+    const ts = toSlug(toVal);
+    history.replaceState(null, '', `${location.pathname}?from=${fs}&to=${ts}`);
+  }
 }
 
 // ── IMPORTANT: Replace this with your Cloudflare Worker URL after deploying ──
@@ -163,8 +169,8 @@ function openRouteView() {
   const wrapper = document.querySelector('.wrapper');
   view.classList.add('open');
   wrapper.classList.add('hidden');
-  document.querySelector('.blob.blob-1') && document.querySelectorAll('.blob').forEach(b => b.style.display = 'none');
-  // Push state so back button works
+  document.body.style.overflow = 'hidden';
+  document.querySelectorAll('.blob').forEach(b => b.style.display = 'none');
   history.pushState({ routeView: true }, '');
 }
 
@@ -173,6 +179,7 @@ function closeRouteView() {
   const wrapper = document.querySelector('.wrapper');
   view.classList.remove('open');
   wrapper.classList.remove('hidden');
+  document.body.style.overflow = '';
   document.querySelectorAll('.blob').forEach(b => b.style.display = '');
 }
 
