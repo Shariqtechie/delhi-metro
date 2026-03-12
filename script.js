@@ -244,6 +244,7 @@ async function findRoute() {
     const routes = json.routes || [];
     dbg('✅ Got ' + routes.length + ' route(s)', '#4CAF50');
     if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
+    if (routes[0]) dbg('gates: ' + JSON.stringify(routes.map(r => r.gates?.length || 0)), '#FF6EB8');
 
     // Save to cache
     cacheSet(cacheKey, routes);
