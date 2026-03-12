@@ -60,10 +60,21 @@ function setStation(field, name) {
     fromVal = name;
     document.getElementById('from-input').value = name;
     document.getElementById('from-dropdown').classList.remove('open');
+    // Auto-focus to field if to is empty
+    if (!toVal) {
+      setTimeout(() => document.getElementById('to-input').focus(), 50);
+    }
   } else {
     toVal = name;
     document.getElementById('to-input').value = name;
     document.getElementById('to-dropdown').classList.remove('open');
+    // Hide keyboard when second station is selected
+    document.getElementById('to-input').blur();
+  }
+  // Update URL
+  if (fromVal && toVal) {
+    const fs = toSlug(fromVal), ts = toSlug(toVal);
+    history.replaceState(null, '', `${location.pathname}?from=${fs}&to=${ts}`);
   }
   checkBtn();
 }
@@ -86,6 +97,10 @@ function clearField(field) {
   else toVal = '';
   checkBtn();
   document.getElementById(field + '-input').focus();
+  // Clean URL if both fields empty
+  if (!fromVal && !toVal) {
+    history.replaceState(null, '', location.pathname);
+  }
 }
 
 function setupField(inputId, dropdownId, field) {
@@ -581,10 +596,7 @@ function renderRecentRoutes() {
 }
 
 window.loadRecent = function(from, to) {
-  document.getElementById('from-input').value = from;
-  document.getElementById('to-input').value   = to;
   fromVal = from; toVal = to;
-  checkBtn();
   findRoute();
 };
 
