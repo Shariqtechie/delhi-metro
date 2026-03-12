@@ -99,7 +99,8 @@ function clearField(field) {
   document.getElementById(field + '-input').focus();
   // Clean URL if both fields empty
   if (!fromVal && !toVal) {
-    history.replaceState(null, '', location.pathname);
+    const cleanUrl = location.origin + location.pathname.replace(/\?.*$/, '');
+    history.replaceState(null, '', cleanUrl);
   }
 }
 
@@ -257,8 +258,8 @@ function cacheSet(key, data) {
 }
 
 async function findRoute() {
-  const from = document.getElementById('from-input').value.trim();
-  const to   = document.getElementById('to-input').value.trim();
+  const from = fromVal.trim() || document.getElementById('from-input').value.trim();
+  const to   = toVal.trim()   || document.getElementById('to-input').value.trim();
   if (!from || !to) return;
 
   const fromSlug = toSlug(from);
