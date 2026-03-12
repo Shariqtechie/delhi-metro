@@ -600,3 +600,10 @@ document.addEventListener('keydown', e => {
     if (!btn.disabled) findRoute();
   }
 });
+// ── PWA SERVICE WORKER ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/delhi-metro/sw.js')
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
