@@ -597,6 +597,10 @@ function renderRecentRoutes() {
 }
 
 // ── GPS NEARBY STATIONS ──
+let _nearbyUserLat = null, _nearbyUserLon = null;
+let _nearbyOSMStations = null;
+let _nearbyMode = 'walk';
+
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -607,101 +611,135 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// Fetch real coords from OpenStreetMap Overpass API
 async function fetchOSMStationCoords(lat, lon) {
-  // Search within 10km radius for Delhi Metro stations
-  const r = 10000;
-  const query = `[out:json][timeout:15];node["railway"="station"]["network"="Delhi Metro"](around:${r},${lat},${lon});out;`;
+  const query = `[out:json][timeout:15];node["railway"="station"]["network"="Delhi Metro"](around:10000,${lat},${lon});out;`;
   const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
   const res = await fetch(url);
   const data = await res.json();
   return data.elements.map(e => ({
     name: e.tags.name || e.tags['name:en'] || '',
-    lat: e.lat,
-    lon: e.lon
+    lat: e.lat, lon: e.lon
   })).filter(e => e.name);
 }
 
-function findNearbyStations() {
-  const btn = document.getElementById('near-me-btn');
-  const list = document.getElementById('nearby-list');
+async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon) {
+  const profile = mode === 'walk' ? 'foot' : 'driving';
+  const url = `https://router.project-osrm.org/route/v1/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.routes && data.routes[0]) {
+    return {
+      km: (data.routes[0].distance / 1000).toFixed(1),
+      mins: Math.round(data.routes[0].duration / 60)
+    };
+  }
+  return null;
+}
 
-  if (!navigator.geolocation) {
-    btn.textContent = '📍 GPS not supported';
+function openNearbyPopup() {
+  document.getElementById('nearby-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+window.closeNearbyPopup = function(e) {
+  if (e && e.target !== document.getElementById('nearby-overlay')) return;
+  document.getElementById('nearby-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+};
+
+window.setNearbyMode = function(mode) {
+  _nearbyMode = mode;
+  document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
+  document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
+  if (_nearbyOSMStations && _nearbyUserLat) {
+    renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, mode);
+  }
+};
+
+async function renderNearbyResults(osmStations, lat, lon, mode) {
+  const resultsEl = document.getElementById('nearby-results');
+  resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distance...</div>`;
+
+  const candidates = osmStations
+    .map(osm => {
+      const match = STATIONS.find(s =>
+        s.name.toLowerCase().replace(/[\s()-]/g,'') === osm.name.toLowerCase().replace(/[\s()-]/g,'') ||
+        s.name.toLowerCase().includes(osm.name.toLowerCase().slice(0,8)) ||
+        osm.name.toLowerCase().includes(s.name.toLowerCase().slice(0,8))
+      );
+      return match ? { ...match, osmLat: osm.lat, osmLon: osm.lon, straight: haversineKm(lat, lon, osm.lat, osm.lon) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.straight - b.straight)
+    .slice(0, 7);
+
+  const withRoutes = await Promise.all(
+    candidates.map(async s => {
+      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
+      return { ...s, route };
+    })
+  );
+
+  const sorted = withRoutes
+    .filter(s => s.route)
+    .sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km))
+    .slice(0, 5);
+
+  if (!sorted.length) {
+    resultsEl.innerHTML = '<div class="nearby-empty">No stations found nearby</div>';
     return;
   }
 
-  btn.textContent = '⏳ Getting location...';
-  btn.disabled = true;
+  const modeIcon = mode === 'walk' ? '🚶' : '🚗';
+  resultsEl.innerHTML = `
+    <div class="nearby-stations">
+      ${sorted.map((s, i) => `
+        <button class="nearby-item ${i === 0 ? 'nearest' : ''}" onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
+          <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
+          <span class="nearby-name">${s.name}</span>
+          <span class="nearby-dist">
+            ${modeIcon} ${s.route.km} km
+            <span class="nearby-mins">${s.route.mins} min</span>
+          </span>
+        </button>`).join('')}
+    </div>`;
+}
 
+function findNearbyStations() {
+  openNearbyPopup();
+  if (!navigator.geolocation) {
+    document.getElementById('nearby-results').innerHTML = '<div class="nearby-empty">GPS not supported on this device</div>';
+    return;
+  }
+  if (_nearbyUserLat && _nearbyOSMStations) {
+    renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, _nearbyMode);
+    return;
+  }
+  document.getElementById('nearby-results').innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Getting your location...</div>`;
   navigator.geolocation.getCurrentPosition(
     async pos => {
-      const { latitude: lat, longitude: lon } = pos.coords;
-      btn.textContent = '🔍 Finding stations...';
-
+      _nearbyUserLat = pos.coords.latitude;
+      _nearbyUserLon = pos.coords.longitude;
       try {
-        // Get real coords from OSM
-        const osmStations = await fetchOSMStationCoords(lat, lon);
-
-        // Match OSM stations to our STATIONS array by name fuzzy match
-        const nearby = osmStations.map(osm => {
-          const km = haversineKm(lat, lon, osm.lat, osm.lon);
-          // Find matching station in our list
-          const match = STATIONS.find(s =>
-            s.name.toLowerCase().replace(/\s+/g,'') === osm.name.toLowerCase().replace(/\s+/g,'') ||
-            s.name.toLowerCase().includes(osm.name.toLowerCase().slice(0,8)) ||
-            osm.name.toLowerCase().includes(s.name.toLowerCase().slice(0,8))
-          );
-          return match ? { ...match, km } : null;
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.km - b.km)
-        .slice(0, 5);
-
-        btn.textContent = '📍 Use My Location';
-        btn.disabled = false;
-
-        if (!nearby.length) {
-          list.style.display = 'block';
-          list.innerHTML = '<div class="nearby-empty">No stations found nearby</div>';
-          return;
-        }
-
-        list.style.display = 'block';
-        list.innerHTML = `
-          <div class="nearby-label">NEAREST STATIONS</div>
-          <div class="nearby-stations">
-            ${nearby.map(s => `
-              <button class="nearby-item" onclick="pickNearby('${s.name}')">
-                <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-                <span class="nearby-name">${s.name}</span>
-                <span class="nearby-km">${s.km.toFixed(1)} km</span>
-              </button>`).join('')}
-          </div>`;
-
+        document.getElementById('nearby-results').innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Finding nearby stations...</div>`;
+        _nearbyOSMStations = await fetchOSMStationCoords(_nearbyUserLat, _nearbyUserLon);
+        renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, _nearbyMode);
       } catch(e) {
-        btn.textContent = '📍 Use My Location';
-        btn.disabled = false;
-        list.style.display = 'block';
-        list.innerHTML = '<div class="nearby-empty">⚠️ Could not load station data</div>';
+        document.getElementById('nearby-results').innerHTML = '<div class="nearby-empty">⚠️ Could not fetch station data. Check connection.</div>';
       }
     },
     err => {
-      btn.textContent = '📍 Use My Location';
-      btn.disabled = false;
       const msg = err.code === 1 ? 'Location permission denied' :
                   err.code === 2 ? 'Location unavailable' : 'Location timed out';
-      list.style.display = 'block';
-      list.innerHTML = `<div class="nearby-empty">⚠️ ${msg}</div>`;
+      document.getElementById('nearby-results').innerHTML = `<div class="nearby-empty">⚠️ ${msg}</div>`;
     },
     { timeout: 8000, maximumAge: 60000 }
   );
 }
 
 window.pickNearby = function(name) {
-  // Close nearby list
-  document.getElementById('nearby-list').style.display = 'none';
-  // Set as From and jump to To
+  document.getElementById('nearby-overlay').classList.remove('open');
+  document.body.style.overflow = '';
   setStation('from', name);
 };
 
