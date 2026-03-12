@@ -294,7 +294,7 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
       </button>
       <button class="popup-btn btn-maps" onclick="window.open('${mapsUrl}','_blank');closePopup()">
         <div class="popup-btn-icon">🗺️</div>
-        <div class="popup-btn-text">Google Maps<span>Live timings & directions</span></div>
+        <div class="popup-btn-text">Google Maps<span>Live timings & other navigation</span></div>
       </button>`;
     return;
   }
@@ -368,6 +368,24 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
     }).join('') + '</div>';
   })() : '';
 
+  // Build gates HTML
+  let gatesHtml = '';
+  if (data.gates && data.gates.length > 0) {
+    gatesHtml = `<div class="gates-section">` +
+      data.gates.map(sg => `
+        <div class="gates-station">
+          <div class="gates-station-name">🚪 ${sg.station}</div>
+          <div class="gates-list">
+            ${sg.gates.map(g => `
+              <div class="gate-row">
+                <span class="gate-num">Gate ${g.gate}</span>
+                <span class="gate-desc">${g.desc}</span>
+              </div>`).join('')}
+          </div>
+        </div>`).join('') +
+      `</div>`;
+  }
+
   if (hasMultiple) window._tabRoutes = { from, to, allRoutes };
 
   box.innerHTML = `
@@ -387,16 +405,19 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
       ${data.lastTrain  ? `<div class="route-stat"><div class="rs-val">${data.lastTrain}</div><div class="rs-lbl">Last</div></div>` : ''}
     </div>
 
-    <div class="route-map">${routeMapHtml}</div>
+    <div class="route-body">
+      <div class="route-map">${routeMapHtml}</div>
+      ${gatesHtml ? `<div class="gates-side">${gatesHtml}</div>` : ''}
+    </div>
 
     <div class="popup-actions">
-<button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
+      <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
       </button>
       <button class="popup-btn btn-maps" onclick="window.open('${mapsUrl}','_blank')">
         <div class="popup-btn-icon">🗺️</div>
-        <div class="popup-btn-text">Google Maps<span>Live timings & navigation</span></div>
+        <div class="popup-btn-text">Google Maps<span>Live timings & other navigation</span></div>
       </button>
     </div>`;
 
