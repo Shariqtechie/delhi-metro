@@ -596,6 +596,80 @@ function renderRecentRoutes() {
   } catch(e) {}
 }
 
+// ── GPS NEARBY STATIONS ──
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function findNearbyStations() {
+  const btn = document.getElementById('near-me-btn');
+  const list = document.getElementById('nearby-list');
+
+  if (!navigator.geolocation) {
+    btn.textContent = '📍 GPS not supported';
+    return;
+  }
+
+  btn.textContent = '⏳ Getting location...';
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      btn.textContent = '📍 Use My Location';
+      btn.disabled = false;
+
+      // Calculate distance to every station and sort
+      const nearby = STATIONS
+        .filter(s => s.lat && s.lon)
+        .map(s => ({ ...s, km: haversineKm(lat, lon, s.lat, s.lon) }))
+        .sort((a, b) => a.km - b.km)
+        .slice(0, 5);
+
+      if (!nearby.length) {
+        list.style.display = 'block';
+        list.innerHTML = '<div class="nearby-empty">No station data available</div>';
+        return;
+      }
+
+      list.style.display = 'block';
+      list.innerHTML = `
+        <div class="nearby-label">NEAREST STATIONS</div>
+        <div class="nearby-stations">
+          ${nearby.map(s => `
+            <button class="nearby-item" onclick="pickNearby('${s.name}')">
+              <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
+              <span class="nearby-name">${s.name}</span>
+              <span class="nearby-km">${s.km.toFixed(1)} km</span>
+            </button>`).join('')}
+        </div>`;
+    },
+    err => {
+      btn.textContent = '📍 Use My Location';
+      btn.disabled = false;
+      const msg = err.code === 1 ? 'Location permission denied' :
+                  err.code === 2 ? 'Location unavailable' : 'Location timed out';
+      const list = document.getElementById('nearby-list');
+      list.style.display = 'block';
+      list.innerHTML = `<div class="nearby-empty">⚠️ ${msg}</div>`;
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
+}
+
+window.pickNearby = function(name) {
+  // Close nearby list
+  document.getElementById('nearby-list').style.display = 'none';
+  // Set as From and jump to To
+  setStation('from', name);
+};
+
 window.loadRecent = function(from, to) {
   fromVal = from; toVal = to;
   findRoute();
