@@ -874,3 +874,27 @@
 .rc-from { font-weight: 600; }
 .rc-arrow { color: var(--muted); font-size: 11px; }
 .rc-to   { color: var(--muted); }
+
+/* Field clear button */
+.field-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 5;
+}
+.field-clear:hover { background: rgba(255,255,255,0.15); color: #fff; }
