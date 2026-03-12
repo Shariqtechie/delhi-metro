@@ -100,18 +100,28 @@ function setupField(inputId, dropdownId, field) {
 
     if (!q) { dropdown.classList.remove('open'); return; }
 
-    // Fuzzy match — each word in query must appear as substring in name
-    // Also scores exact/startsWith higher so they bubble up first
+    // Fuzzy match — checks if query chars appear in order within name
+    // e.g. "kashmiri" matches "Kashmere Gate" because k-a-s-h-m-r-i all appear in order
     function fuzzyMatch(name, query) {
       const n = name.toLowerCase();
-      const words = query.split(/\s+/).filter(Boolean);
-      return words.every(w => n.includes(w));
+      const q2 = query.toLowerCase();
+      // First try: every word is a substring (fast, handles "raj chowk")
+      const words = q2.split(/\s+/).filter(Boolean);
+      if (words.every(w => n.includes(w))) return true;
+      // Second try: all chars of query appear in order in name
+      let qi = 0;
+      for (let i = 0; i < n.length && qi < q2.length; i++) {
+        if (n[i] === q2[qi]) qi++;
+      }
+      return qi === q2.length;
     }
     function fuzzyScore(name, query) {
       const n = name.toLowerCase();
-      if (n === query) return 3;
-      if (n.startsWith(query)) return 2;
-      if (n.includes(query)) return 1;
+      if (n === query) return 4;
+      if (n.startsWith(query)) return 3;
+      if (n.includes(query)) return 2;
+      // word match
+      if (query.split(/\s+/).every(w => n.includes(w))) return 1;
       return 0;
     }
     const matches = STATIONS
