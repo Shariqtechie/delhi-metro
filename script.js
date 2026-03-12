@@ -696,42 +696,56 @@ window.closeNearbyPopup = function(e) {
 };
 
 window.setNearbyMode = function(mode) {
+  const prev = _nearbyMode;
   _nearbyMode = mode;
   document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
   document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
   if (!_nearbyUserLat || !_nearbyOSMStations) return;
-  // Use cache if available, otherwise fetch
+  // walk→drive = slide left, drive→walk = slide right
+  const dir = (mode === 'drive') ? 'left' : 'right';
   if (_nearbyCache[mode]) {
-    displayNearbyResults(_nearbyCache[mode], mode);
+    displayNearbyResults(_nearbyCache[mode], mode, dir);
   } else {
-    renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, mode);
+    renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, mode, false);
   }
 };
 
-function displayNearbyResults(sorted, mode) {
+function buildItemHTML(s, i, slideDir) {
+  const modeIcon = _nearbyMode === 'walk' ? '🚶' : '🚗';
+  const slideClass = slideDir === 'right' ? 'slide-from-right' : 'slide-from-left';
+  return `
+    <button class="nearby-item ${i === 0 ? 'nearest' : ''} ${slideClass}" 
+            style="animation-delay:${i * 0.06}s"
+            onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
+      <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
+      <span class="nearby-name">${s.name}</span>
+      <span class="nearby-dist">
+        ${modeIcon} ${s.route.km} km
+        <span class="nearby-mins">${s.route.mins} min</span>
+      </span>
+    </button>`;
+}
+
+function displayNearbyResults(sorted, mode, slideDir) {
   const resultsEl = document.getElementById('nearby-results');
   if (!sorted.length) {
     resultsEl.innerHTML = '<div class="nearby-empty">No stations found nearby</div>';
     return;
   }
-  const modeIcon = mode === 'walk' ? '🚶' : '🚗';
-  resultsEl.innerHTML = `
-    <div class="nearby-stations">
-      ${sorted.map((s, i) => `
-        <button class="nearby-item ${i === 0 ? 'nearest' : ''}" onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
-          <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-          <span class="nearby-name">${s.name}</span>
-          <span class="nearby-dist">
-            ${modeIcon} ${s.route.km} km
-            <span class="nearby-mins">${s.route.mins} min</span>
-          </span>
-        </button>`).join('')}
-    </div>`;
+  // Slide direction for cached tab switch
+  const dir = slideDir || 'right';
+  resultsEl.innerHTML = `<div class="nearby-stations slide-in-${dir}">
+    ${sorted.map((s, i) => buildItemHTML(s, i, dir)).join('')}
+  </div>`;
 }
 
-async function renderNearbyResults(osmStations, lat, lon, mode) {
+async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
   const resultsEl = document.getElementById('nearby-results');
-  resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distance...</div>`;
+
+  // Only show loading UI if this is the active tab (not background prefetch)
+  if (!prefetch) {
+    resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distances...</div>`;
+  }
 
   const candidates = osmStations
     .map(osm => {
@@ -746,20 +760,80 @@ async function renderNearbyResults(osmStations, lat, lon, mode) {
     .sort((a, b) => a.straight - b.straight)
     .slice(0, 7);
 
-  const withRoutes = await Promise.all(
-    candidates.map(async s => {
+  if (!prefetch) {
+    // Animate each station sliding in as its route is calculated
+    const container = document.createElement('div');
+    container.className = 'nearby-stations';
+    resultsEl.innerHTML = '';
+    resultsEl.appendChild(container);
+
+    let slideRight = true;
+    const withRoutes = [];
+
+    for (const s of candidates) {
       const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
-      return { ...s, route };
-    })
-  );
+      if (!route) continue;
+      const item = { ...s, route };
+      withRoutes.push(item);
 
-  const sorted = withRoutes
-    .filter(s => s.route)
-    .sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km))
-    .slice(0, 5);
+      // Add card sliding in from alternating sides
+      const btn = document.createElement('button');
+      btn.className = `nearby-item ${slideRight ? 'slide-from-right' : 'slide-from-left'}`;
+      btn.style.animationDelay = '0s';
+      btn.innerHTML = `
+        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
+        <span class="nearby-name">${s.name}</span>
+        <span class="nearby-dist">
+          ${mode === 'walk' ? '🚶' : '🚗'} ${route.km} km
+          <span class="nearby-mins">${route.mins} min</span>
+        </span>`;
+      btn.onclick = () => pickNearby(s.name);
+      container.appendChild(btn);
+      slideRight = !slideRight;
+    }
 
-  _nearbyCache[mode] = sorted;
-  displayNearbyResults(sorted, mode);
+    // After all loaded — sort by distance with animation
+    const sorted = [...withRoutes].sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
+    _nearbyCache[mode] = sorted;
+
+    // Brief pause so user sees the unsorted state, then animate sort
+    await new Promise(r => setTimeout(r, 400));
+
+    // Clear and re-render sorted with sort-up animation on the ones that moved up
+    container.innerHTML = '';
+    sorted.forEach((s, i) => {
+      const btn = document.createElement('button');
+      btn.className = `nearby-item ${i === 0 ? 'nearest' : ''} sort-up`;
+      btn.style.animationDelay = `${i * 0.07}s`;
+      btn.innerHTML = `
+        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
+        <span class="nearby-name">${s.name}</span>
+        <span class="nearby-dist">
+          ${mode === 'walk' ? '🚶' : '🚗'} ${s.route.km} km
+          <span class="nearby-mins">${s.route.mins} min</span>
+        </span>`;
+      btn.onclick = () => pickNearby(s.name);
+      if (i === 0) btn.classList.add('nearest');
+      container.appendChild(btn);
+    });
+
+    // Background prefetch the OTHER mode silently
+    const otherMode = mode === 'walk' ? 'drive' : 'walk';
+    if (!_nearbyCache[otherMode]) {
+      renderNearbyResults(osmStations, lat, lon, otherMode, true);
+    }
+
+  } else {
+    // Background prefetch — just compute and cache silently, no UI changes
+    const withRoutes = await Promise.all(
+      candidates.map(async s => {
+        const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
+        return route ? { ...s, route } : null;
+      })
+    );
+    const sorted = withRoutes.filter(Boolean).sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
+    _nearbyCache[mode] = sorted;
+  }
 }
 
 function findNearbyStations() {
