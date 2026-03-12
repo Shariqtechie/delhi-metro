@@ -1,4 +1,4 @@
-// ── DEBUG PANEL v7 (remove this block when done testing) ──
+// ── DEBUG PANEL (remove when done) ──
 const _dbg = document.createElement('div');
 _dbg.id = 'debug-panel';
 _dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:180px;overflow-y:auto;background:#0a0a0a;border-top:2px solid #E63946;font-family:monospace;font-size:11px;z-index:99999;padding:6px 10px;display:none';
@@ -94,14 +94,30 @@ function setupField(inputId, dropdownId, field) {
 
   function renderDropdown() {
     const q = input.value.trim().toLowerCase();
-    dbg('🔎 Search [' + field + ']: "' + q + '"', '#888');
     if (field === 'from') fromVal = '';
     else toVal = '';
     checkBtn();
 
     if (!q) { dropdown.classList.remove('open'); return; }
 
-    const matches = STATIONS.filter(s => s.name.toLowerCase().includes(q)).slice(0, 12);
+    // Fuzzy match — each word in query must appear as substring in name
+    // Also scores exact/startsWith higher so they bubble up first
+    function fuzzyMatch(name, query) {
+      const n = name.toLowerCase();
+      const words = query.split(/\s+/).filter(Boolean);
+      return words.every(w => n.includes(w));
+    }
+    function fuzzyScore(name, query) {
+      const n = name.toLowerCase();
+      if (n === query) return 3;
+      if (n.startsWith(query)) return 2;
+      if (n.includes(query)) return 1;
+      return 0;
+    }
+    const matches = STATIONS
+      .filter(s => fuzzyMatch(s.name, q))
+      .sort((a, b) => fuzzyScore(b.name, q) - fuzzyScore(a.name, q))
+      .slice(0, 12);
     dropdown.innerHTML = '';
 
     if (!matches.length) {
@@ -200,7 +216,7 @@ function toSlug(name) {
 }
 
 // ── ROUTE CACHE (localStorage, 10 min expiry) ──
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+const CACHE_TTL = 3 * 60 * 60 * 1000; // 3 hours
 
 function cacheGet(key) {
   try {
@@ -226,15 +242,11 @@ async function findRoute() {
 
   // Check cache first
   if (cacheGet(cacheKey)) {
-    dbg('⚡ Cache hit: ' + from + ' → ' + to, '#4CAF50');
     const routes = cacheGet(cacheKey);
     showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
     return;
   }
-
-  dbg('🔍 Finding route: ' + from + ' → ' + to, '#FFB703');
   showPopup({ loading: true, from, to });
-  dbg('📡 Fetching: ' + WORKER_URL + '/?from=' + fromSlug + '&to=' + toSlug2, '#888');
 
   try {
     const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
@@ -242,7 +254,6 @@ async function findRoute() {
     if (json.error) throw new Error(json.error);
 
     const routes = json.routes || [];
-    dbg('✅ Got ' + routes.length + ' route(s)', '#4CAF50');
     if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
     if (routes[0]) dbg('gates: ' + JSON.stringify(routes.map(r => r.gates?.length || 0)), '#FF6EB8');
 
@@ -257,7 +268,6 @@ async function findRoute() {
 
     showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
   } catch (e) {
-    dbg('❌ Error: ' + e.message, '#E63946');
     showPopup({ loading: false, from, to, error: true });
   }
 }
@@ -392,7 +402,10 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
   box.innerHTML = `
     <div class="route-view-nav">
       <button class="popup-close" onclick="closePopup()">← Back</button>
-      <button class="popup-share-icon" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')" title="Share Route">🔗</button>
+      <div class="nav-right">
+        <button id="save-route-btn" class="save-btn" onclick="toggleSaveRoute('${from}','${to}','${fromSlug}','${toSlug2}')">${isRouteSaved(from,to) ? '★ Saved' : '☆ Save'}</button>
+        <button class="popup-share-icon" onclick="shareRoute('${fromSlug}','${toSlug2}','${from}','${to}')" title="Share Route">🔗</button>
+      </div>
     </div>
     <div class="popup-title">YOUR ROUTE</div>
     <div class="popup-route"><strong>${from}</strong><span class="route-arrow">↓</span><strong>${to}</strong></div>
@@ -428,7 +441,6 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
 function shareRoute(fromSlug, toSlug, fromName, toName) {
   const url = `${location.origin}${location.pathname}?from=${fromSlug}&to=${toSlug}`;
   navigator.clipboard.writeText(url).then(() => {
-    dbg('🔗 Link copied: ' + url, '#4CAF50');
     // Show toast
     const toast = document.createElement('div');
     toast.textContent = '🔗 Link copied!';
@@ -472,7 +484,60 @@ window.switchTab = function(i) {
   showPopup({ loading: false, from, to, data: allRoutes[i], allRoutes, activeTab: i });
 };
 
-// ── RECENT ROUTES ──
+// ── SAVED ROUTES ──
+function toggleSaveRoute(from, to, fromSlug, toSlug) {
+  try {
+    let saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    const exists = saved.findIndex(r => r.from === from && r.to === to);
+    if (exists > -1) {
+      saved.splice(exists, 1);
+    } else {
+      saved.unshift({ from, to, fromSlug, toSlug });
+      saved = saved.slice(0, 10);
+    }
+    localStorage.setItem('dmrc_saved', JSON.stringify(saved));
+    renderSavedRoutes();
+    updateSaveBtn(from, to);
+  } catch(e) {}
+}
+
+function isRouteSaved(from, to) {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    return saved.some(r => r.from === from && r.to === to);
+  } catch(e) { return false; }
+}
+
+function updateSaveBtn(from, to) {
+  const btn = document.getElementById('save-route-btn');
+  if (!btn) return;
+  const saved = isRouteSaved(from, to);
+  btn.textContent = saved ? '★ Saved' : '☆ Save';
+  btn.classList.toggle('saved', saved);
+}
+
+function renderSavedRoutes() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dmrc_saved') || '[]');
+    const container = document.getElementById('saved-routes');
+    if (!container) return;
+    if (saved.length === 0) { container.style.display = 'none'; return; }
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="recent-label">SAVED</div>
+      <div class="recent-list">
+        ${saved.map(r => `
+          <button class="recent-chip saved-chip" onclick="loadRecent('${r.from}','${r.to}')">
+            <span class="rc-star">★</span>
+            <span class="rc-from">${r.from}</span>
+            <span class="rc-arrow">→</span>
+            <span class="rc-to">${r.to}</span>
+          </button>`).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+
 function saveRecentRoute(from, to, fromSlug, toSlug) {
   try {
     let recent = JSON.parse(localStorage.getItem('dmrc_recent') || '[]');
@@ -513,8 +578,11 @@ window.loadRecent = function(from, to) {
   findRoute();
 };
 
-// Init recent routes on load
-document.addEventListener('DOMContentLoaded', renderRecentRoutes);
+// Init on load
+document.addEventListener('DOMContentLoaded', () => {
+  renderSavedRoutes();
+  renderRecentRoutes();
+});
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
