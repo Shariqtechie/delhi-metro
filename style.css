@@ -1034,3 +1034,39 @@
     justify-content: flex-start;
   }
 }
+
+/* Save button + nav right group */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.save-btn {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  height: 36px;
+  padding: 0 14px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.save-btn:hover { background: rgba(255,200,0,0.1); border-color: rgba(255,200,0,0.3); color: #FFD700; }
+.save-btn.saved { background: rgba(255,200,0,0.12); border-color: rgba(255,200,0,0.4); color: #FFD700; }
+
+/* Saved chips (gold tint) */
+.saved-chip {
+  border-color: rgba(255,200,0,0.2) !important;
+}
+.saved-chip:hover {
+  background: rgba(255,200,0,0.08) !important;
+}
+.rc-star {
+  color: #FFD700;
+  font-size: 11px;
+}
