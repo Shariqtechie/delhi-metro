@@ -71,6 +71,21 @@ function setStation(field, name) {
 function checkBtn() {
   const btn = document.getElementById('find-btn');
   btn.disabled = !(fromVal.trim() && toVal.trim());
+  // Show/hide clear buttons based on input value
+  const fc = document.getElementById('from-clear');
+  const tc = document.getElementById('to-clear');
+  const fv = document.getElementById('from-input').value;
+  const tv = document.getElementById('to-input').value;
+  if (fc) { fc.style.opacity = fv ? '1' : '0'; fc.style.pointerEvents = fv ? 'auto' : 'none'; }
+  if (tc) { tc.style.opacity = tv ? '1' : '0'; tc.style.pointerEvents = tv ? 'auto' : 'none'; }
+}
+
+function clearField(field) {
+  document.getElementById(field + '-input').value = '';
+  if (field === 'from') fromVal = '';
+  else toVal = '';
+  checkBtn();
+  document.getElementById(field + '-input').focus();
 }
 
 function setupField(inputId, dropdownId, field) {
@@ -155,8 +170,21 @@ function toSlug(name) {
   return name.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
 
-// ── ROUTE CACHE (in-memory, clears on reload) ──
-const routeCache = {};
+// ── ROUTE CACHE (localStorage, 10 min expiry) ──
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function cacheGet(key) {
+  try {
+    const item = JSON.parse(localStorage.getItem('rc_' + key));
+    if (!item) return null;
+    if (Date.now() - item.ts > CACHE_TTL) { localStorage.removeItem('rc_' + key); return null; }
+    return item.data;
+  } catch(e) { return null; }
+}
+
+function cacheSet(key, data) {
+  try { localStorage.setItem('rc_' + key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
 
 async function findRoute() {
   const from = document.getElementById('from-input').value.trim();
@@ -168,9 +196,9 @@ async function findRoute() {
   const cacheKey = fromSlug + '|' + toSlug2;
 
   // Check cache first
-  if (routeCache[cacheKey]) {
+  if (cacheGet(cacheKey)) {
     dbg('⚡ Cache hit: ' + from + ' → ' + to, '#4CAF50');
-    const routes = routeCache[cacheKey];
+    const routes = cacheGet(cacheKey);
     showPopup({ loading: false, from, to, data: routes[0], allRoutes: routes });
     return;
   }
@@ -189,7 +217,10 @@ async function findRoute() {
     if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
 
     // Save to cache
-    routeCache[cacheKey] = routes;
+    cacheSet(cacheKey, routes);
+
+    // Update URL to reflect current search (so it's shareable)
+    history.replaceState(null, '', `${location.pathname}?from=${fromSlug}&to=${toSlug2}`);
 
     // Save to recent routes
     saveRecentRoute(from, to, fromSlug, toSlug2);
@@ -354,13 +385,12 @@ function shareRoute(fromSlug, toSlug, fromName, toName) {
   });
 }
 
-// Auto-fill from URL params e.g. ?from=kashmere-gate&to=hauz-khas
+// Auto-fill from URL params — fill fields always, fetch only on fresh link visit
 (function() {
   const params = new URLSearchParams(location.search);
   const fromSlug = params.get('from');
   const toSlug_param = params.get('to');
   if (fromSlug && toSlug_param) {
-    // Match slug back to station name
     const fromStation = STATIONS.find(s => s.slug === fromSlug);
     const toStation   = STATIONS.find(s => s.slug === toSlug_param);
     if (fromStation && toStation) {
@@ -369,9 +399,15 @@ function shareRoute(fromSlug, toSlug, fromName, toName) {
       fromVal = fromStation.name;
       toVal   = toStation.name;
       checkBtn();
-      setTimeout(findRoute, 500);
-      // Clean URL so reload shows home page
-      history.replaceState(null, '', location.pathname); // auto-search after page loads
+
+      // Only auto-fetch if this is a fresh link visit, not a reload
+      // sessionStorage flag is set after first fetch — cleared on tab close
+      const sessionKey = 'visited_' + fromSlug + '_' + toSlug_param;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, '1');
+        setTimeout(findRoute, 500);
+      }
+      // Keep URL as-is so fields stay filled on reload
     }
   }
 })();
