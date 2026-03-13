@@ -662,11 +662,10 @@ async function fetchOSMStationCoords(lat, lon) {
   throw new Error('All Overpass mirrors failed');
 }
 
-async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon, signal) {
-  // Use routing.openstreetmap.de for both — router.project-osrm.org blocks parallel requests
+async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon) {
   const profile = mode === 'walk' ? 'routed-foot/route/v1/foot' : 'routed-car/route/v1/driving';
   const url = `https://routing.openstreetmap.de/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
-  const res = await fetch(url, signal ? { signal } : {});
+  const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if (data.routes?.[0]) {
@@ -713,19 +712,9 @@ window.setNearbyMode = function(mode) {
   document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
   document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
   if (!_nearbyUserLat || !_nearbyOSMStations) return;
-  const dir = mode === 'drive' ? 'left' : 'right';
   if (_nearbyCache[mode]) {
-    // Already cached — show instantly
     displayNearbyResults(_nearbyCache[mode], mode);
-    // Prefetch other mode if not done yet
-    const other = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[other] && !_prefetchAbort) prefetchMode(other);
   } else {
-    // Abort foreground calc only, let prefetch keep running unless it's for wrong mode
-    if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
-    // If prefetch is already fetching THIS mode, just let it finish — promote it to foreground
-    // Otherwise abort prefetch too and start fresh
-    if (_prefetchAbort) { _prefetchAbort.abort(); _prefetchAbort = null; }
     calcMode(mode);
   }
 };
@@ -746,18 +735,14 @@ function getCandidates(lat, lon) {
 }
 
 async function calcMode(mode) {
-  const ctrl = new AbortController();
-  _nearbyAbort = ctrl;
   const el = document.getElementById('nearby-results');
   el.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode==='walk'?'walking':'driving'} distances...</div>`;
-
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
   dbg('calcMode: ' + mode + ' candidates=' + candidates.length);
-
   const results = await Promise.all(
     candidates.map(async s => {
       try {
-        const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon, ctrl.signal);
+        const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon);
         dbg('route ok: ' + s.name + ' ' + (route ? route.km+'km' : 'null'));
         return route ? { ...s, route } : null;
       } catch(e) {
@@ -766,37 +751,34 @@ async function calcMode(mode) {
       }
     })
   );
-
-  if (ctrl.signal.aborted) { dbg('aborted after results'); return; }
-  _nearbyAbort = null;
-
   const sorted = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
   dbg('sorted count=' + sorted.length, '#51CF66');
   _nearbyCache[mode] = sorted;
-  displayNearbyResults(sorted, mode);
-
+  // Only show if this mode is still active
+  if (_nearbyMode === mode) displayNearbyResults(sorted, mode);
+  // Prefetch other mode
   const other = mode === 'walk' ? 'drive' : 'walk';
   if (!_nearbyCache[other]) prefetchMode(other);
 }
 
+
 async function prefetchMode(mode) {
-  const ctrl = new AbortController();
-  _prefetchAbort = ctrl;
   dbg('prefetch start: ' + mode);
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
   const results = await Promise.all(
     candidates.map(async s => {
       try {
-        const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon, ctrl.signal);
+        const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon);
         return route ? { ...s, route } : null;
       } catch(e) { return null; }
     })
   );
-  if (ctrl.signal.aborted) { dbg('prefetch aborted: ' + mode); return; }
-  _prefetchAbort = null;
   _nearbyCache[mode] = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
   dbg('prefetch done: ' + mode + ' count=' + _nearbyCache[mode].length, '#51CF66');
+  // If user is now on this tab, show results
+  if (_nearbyMode === mode) displayNearbyResults(_nearbyCache[mode], mode);
 }
+
 
 function findNearbyStations() {
   openNearbyPopup();
