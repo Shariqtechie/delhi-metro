@@ -629,7 +629,8 @@ let _nearbyUserLat = null, _nearbyUserLon = null;
 let _nearbyOSMStations = null;
 let _nearbyMode = 'walk';
 let _nearbyCache = {};
-let _nearbyAbort = null;
+let _nearbyAbort = null;    // foreground calc abort
+let _prefetchAbort = null;  // background prefetch abort
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -714,11 +715,17 @@ window.setNearbyMode = function(mode) {
   if (!_nearbyUserLat || !_nearbyOSMStations) return;
   const dir = mode === 'drive' ? 'left' : 'right';
   if (_nearbyCache[mode]) {
-    displayNearbyResults(_nearbyCache[mode], mode, dir);
+    // Already cached — show instantly
+    displayNearbyResults(_nearbyCache[mode], mode);
+    // Prefetch other mode if not done yet
     const other = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[other]) prefetchMode(other);
+    if (!_nearbyCache[other] && !_prefetchAbort) prefetchMode(other);
   } else {
+    // Abort foreground calc only, let prefetch keep running unless it's for wrong mode
     if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
+    // If prefetch is already fetching THIS mode, just let it finish — promote it to foreground
+    // Otherwise abort prefetch too and start fresh
+    if (_prefetchAbort) { _prefetchAbort.abort(); _prefetchAbort = null; }
     calcMode(mode);
   }
 };
@@ -774,7 +781,8 @@ async function calcMode(mode) {
 
 async function prefetchMode(mode) {
   const ctrl = new AbortController();
-  _nearbyAbort = ctrl;
+  _prefetchAbort = ctrl;
+  dbg('prefetch start: ' + mode);
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
   const results = await Promise.all(
     candidates.map(async s => {
@@ -784,9 +792,10 @@ async function prefetchMode(mode) {
       } catch(e) { return null; }
     })
   );
-  if (ctrl.signal.aborted) return;
-  _nearbyAbort = null;
+  if (ctrl.signal.aborted) { dbg('prefetch aborted: ' + mode); return; }
+  _prefetchAbort = null;
   _nearbyCache[mode] = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
+  dbg('prefetch done: ' + mode + ' count=' + _nearbyCache[mode].length, '#51CF66');
 }
 
 function findNearbyStations() {
