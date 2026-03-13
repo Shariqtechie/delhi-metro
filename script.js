@@ -626,64 +626,9 @@ function renderRecentRoutes() {
 
 // ── GPS NEARBY STATIONS ──
 let _nearbyUserLat = null, _nearbyUserLon = null;
-let _nearbyOSMStations = null;
 let _nearbyMode = 'walk';
-let _nearbyCache = {}; // { walk: [...], drive: [...] }
-let _nearbyAbort = null; // AbortController for current calculation
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-            Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-async function fetchOSMStationCoords(lat, lon) {
-  const query = `[out:json][timeout:15];node["railway"="station"]["network"="Delhi Metro"](around:10000,${lat},${lon});out;`;
-  // Try multiple Overpass mirrors — some browsers block certain ones
-  const mirrors = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
-  ];
-  for (const mirror of mirrors) {
-    try {
-      const res = await fetch(`${mirror}?data=${encodeURIComponent(query)}`);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data.elements) {
-        return data.elements.map(e => ({
-          name: e.tags.name || e.tags['name:en'] || '',
-          lat: e.lat, lon: e.lon
-        })).filter(e => e.name);
-      }
-    } catch(e) { continue; }
-  }
-  throw new Error('All Overpass mirrors failed');
-}
-
-// Cache: { walk: [...results], drive: [...results] }
-
-async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon) {
-  const url = mode === 'walk'
-    ? `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromLon},${fromLat};${toLon},${toLat}?overview=false`
-    : `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
-  const res = await fetch(url);
-  const data = await res.json();
-  if (data.routes && data.routes[0]) {
-    const km = data.routes[0].distance / 1000;
-    // Use realistic Delhi speeds instead of OSRM's estimates:
-    // Walking: 5.5 km/h | Driving in Delhi traffic: 20 km/h avg
-    const mins = mode === 'walk'
-      ? Math.round((km / 5.5) * 60)
-      : Math.round((km / 20) * 60);
-    return { km: km.toFixed(1), mins };
-  }
-  return null;
-}
+let _nearbyCache = {};   // { walk: [...], drive: [...] }
+let _nearbyAbort = null; // AbortController for current fetch
 
 function openNearbyPopup() {
   document.getElementById('nearby-overlay').classList.add('open');
@@ -696,145 +641,95 @@ window.closeNearbyPopup = function(e) {
   document.body.style.overflow = '';
 };
 
-
-window.setNearbyMode = function(mode) {
-  _nearbyMode = mode;
-  document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
-  document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
-  if (!_nearbyUserLat || !_nearbyOSMStations) return;
-  const dir = (mode === 'drive') ? 'left' : 'right';
-  if (_nearbyCache[mode]) {
-    displayNearbyResults(_nearbyCache[mode], mode, dir);
-    // Resume background calc for other mode if not cached yet
-    const other = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[other]) {
-      if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
-      renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, other, true);
-    }
-  } else {
-    // Abort in-progress calculation and start fresh for this mode
-    if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
-    renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, mode, false);
-  }
-};
-
-function buildItemHTML(s, i, slideDir) {
-  const modeIcon = _nearbyMode === 'walk' ? '🚶' : '🚗';
-  const slideClass = slideDir === 'right' ? 'slide-from-right' : 'slide-from-left';
-  return `
-    <button class="nearby-item ${i === 0 ? 'nearest' : ''} ${slideClass}" 
-            style="animation-delay:${i * 0.06}s"
-            onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
-      <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-      <span class="nearby-name">${s.name}</span>
-      <span class="nearby-dist">
-        ${modeIcon} ${s.route.km} km
-        <span class="nearby-mins">${s.route.mins} min</span>
-      </span>
-    </button>`;
-}
-
 function displayNearbyResults(sorted, mode, slideDir) {
   const resultsEl = document.getElementById('nearby-results');
   if (!sorted.length) {
     resultsEl.innerHTML = '<div class="nearby-empty">No stations found nearby</div>';
     return;
   }
-  // Slide direction for cached tab switch
+  const modeIcon = mode === 'walk' ? '🚶' : '🚗';
   const dir = slideDir || 'right';
   resultsEl.innerHTML = `<div class="nearby-stations slide-in-${dir}">
-    ${sorted.map((s, i) => buildItemHTML(s, i, dir)).join('')}
+    ${sorted.map((s, i) => `
+      <button class="nearby-item ${i === 0 ? 'nearest' : ''}" style="animation-delay:${i*0.06}s"
+              onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
+        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||LINE_COLORS[s.metroLine]||'#fff'}"></span>
+        <span class="nearby-name">${s.name}</span>
+        <span class="nearby-dist">
+          ${modeIcon} ${s.km} km
+          <span class="nearby-mins">${s.mins} min</span>
+        </span>
+      </button>`).join('')}
   </div>`;
 }
 
-async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
-  const resultsEl = document.getElementById('nearby-results');
+async function fetchNearbyFromWorker(lat, lon, mode, signal) {
+  const res = await fetch(`${WORKER_URL}/nearby?lat=${lat}&lon=${lon}&mode=${mode}`, { signal });
+  const data = await res.json();
+  // Enrich with line color from our STATIONS array
+  return (data.stations || []).map(s => {
+    const match = STATIONS.find(st =>
+      st.name.toLowerCase().replace(/[\s()-]/g,'') === s.name.toLowerCase().replace(/[\s()-]/g,'') ||
+      st.name.toLowerCase().includes(s.name.toLowerCase().slice(0,8)) ||
+      s.name.toLowerCase().includes(st.name.toLowerCase().slice(0,8))
+    );
+    return { ...s, line: match?.line || '', slug: match?.slug || '' };
+  });
+}
 
-  // Create a new AbortController for this run
-  const ctrl = new AbortController();
-  if (!prefetch) {
-    // Cancel any previous run
-    if (_nearbyAbort) _nearbyAbort.abort();
-    _nearbyAbort = ctrl;
-    resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distances...</div>`;
+window.setNearbyMode = function(mode) {
+  _nearbyMode = mode;
+  document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
+  document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
+  if (!_nearbyUserLat) return;
+  const dir = mode === 'drive' ? 'left' : 'right';
+
+  if (_nearbyCache[mode]) {
+    displayNearbyResults(_nearbyCache[mode], mode, dir);
+    // Prefetch other mode in background if not cached
+    const other = mode === 'walk' ? 'drive' : 'walk';
+    if (!_nearbyCache[other] && !_nearbyAbort) prefetchOtherMode(other);
+    return;
   }
 
-  const candidates = osmStations
-    .map(osm => {
-      const match = STATIONS.find(s =>
-        s.name.toLowerCase().replace(/[\s()-]/g,'') === osm.name.toLowerCase().replace(/[\s()-]/g,'') ||
-        s.name.toLowerCase().includes(osm.name.toLowerCase().slice(0,8)) ||
-        osm.name.toLowerCase().includes(s.name.toLowerCase().slice(0,8))
-      );
-      return match ? { ...match, osmLat: osm.lat, osmLon: osm.lon, straight: haversineKm(lat, lon, osm.lat, osm.lon) } : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.straight - b.straight)
-    .slice(0, 7);
+  // Abort previous and fetch fresh
+  if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
+  loadNearbyMode(mode);
+};
 
-  if (!prefetch) {
-    const container = document.createElement('div');
-    container.className = 'nearby-stations';
-    resultsEl.innerHTML = '';
-    resultsEl.appendChild(container);
+async function loadNearbyMode(mode) {
+  const ctrl = new AbortController();
+  _nearbyAbort = ctrl;
+  const resultsEl = document.getElementById('nearby-results');
+  resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distances...</div>`;
 
-    let slideRight = true;
-    const withRoutes = [];
-
-    for (const s of candidates) {
-      // Stop if aborted (user switched tab)
-      if (ctrl.signal.aborted) return;
-
-      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
-      if (ctrl.signal.aborted) return; // check again after await
-      if (!route) continue;
-
-      withRoutes.push({ ...s, route });
-
-      const btn = document.createElement('button');
-      btn.className = `nearby-item ${slideRight ? 'slide-from-right' : 'slide-from-left'}`;
-      btn.style.animationDelay = '0s';
-      btn.innerHTML = `
-        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-        <span class="nearby-name">${s.name}</span>
-        <span class="nearby-dist">
-          ${mode === 'walk' ? '🚶' : '🚗'} ${route.km} km
-          <span class="nearby-mins">${route.mins} min</span>
-        </span>`;
-      btn.onclick = () => pickNearby(s.name);
-      container.appendChild(btn);
-      slideRight = !slideRight;
-    }
-
+  try {
+    const stations = await fetchNearbyFromWorker(_nearbyUserLat, _nearbyUserLon, mode, ctrl.signal);
     if (ctrl.signal.aborted) return;
-
-    const sorted = [...withRoutes].sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
-    _nearbyCache[mode] = sorted;
+    _nearbyCache[mode] = stations;
     _nearbyAbort = null;
+    displayNearbyResults(stations, mode, 'right');
 
-    await new Promise(r => setTimeout(r, 450));
-    if (ctrl.signal.aborted) return;
-
-    displayNearbyResults(sorted, mode, 'right');
-
-    // Now silently prefetch the other mode in background
+    // Background prefetch the other mode
     const other = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[other]) renderNearbyResults(osmStations, lat, lon, other, true);
-
-  } else {
-    // Background prefetch — sequential to not hammer the API
-    const withRoutes = [];
-    for (const s of candidates) {
-      if (ctrl.signal.aborted) return;
-      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
-      if (ctrl.signal.aborted) return;
-      if (route) withRoutes.push({ ...s, route });
-    }
-    const sorted = withRoutes.sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
-    _nearbyCache[mode] = sorted;
+    if (!_nearbyCache[other]) prefetchOtherMode(other);
+  } catch(e) {
+    if (e.name === 'AbortError') return;
+    resultsEl.innerHTML = '<div class="nearby-empty">⚠️ Could not fetch. Check connection.</div>';
   }
 }
 
+async function prefetchOtherMode(mode) {
+  const ctrl = new AbortController();
+  _nearbyAbort = ctrl;
+  try {
+    const stations = await fetchNearbyFromWorker(_nearbyUserLat, _nearbyUserLon, mode, ctrl.signal);
+    if (!ctrl.signal.aborted) {
+      _nearbyCache[mode] = stations;
+      _nearbyAbort = null;
+    }
+  } catch(e) {}
+}
 
 function findNearbyStations() {
   openNearbyPopup();
@@ -842,26 +737,21 @@ function findNearbyStations() {
     document.getElementById('nearby-results').innerHTML = '<div class="nearby-empty">GPS not supported on this device</div>';
     return;
   }
-  if (_nearbyUserLat && _nearbyOSMStations) {
+  // Already have location — show cache or re-fetch
+  if (_nearbyUserLat) {
     if (_nearbyCache[_nearbyMode]) {
       displayNearbyResults(_nearbyCache[_nearbyMode], _nearbyMode);
     } else {
-      renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, _nearbyMode);
+      loadNearbyMode(_nearbyMode);
     }
     return;
   }
   document.getElementById('nearby-results').innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Getting your location...</div>`;
   navigator.geolocation.getCurrentPosition(
-    async pos => {
+    pos => {
       _nearbyUserLat = pos.coords.latitude;
       _nearbyUserLon = pos.coords.longitude;
-      try {
-        document.getElementById('nearby-results').innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Finding nearby stations...</div>`;
-        _nearbyOSMStations = await fetchOSMStationCoords(_nearbyUserLat, _nearbyUserLon);
-        renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, _nearbyMode);
-      } catch(e) {
-        document.getElementById('nearby-results').innerHTML = '<div class="nearby-empty">⚠️ Could not fetch station data. Check connection.</div>';
-      }
+      loadNearbyMode(_nearbyMode);
     },
     err => {
       const msg = err.code === 1 ? 'Location permission denied' :
