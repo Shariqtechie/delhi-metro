@@ -629,6 +629,7 @@ let _nearbyUserLat = null, _nearbyUserLon = null;
 let _nearbyOSMStations = null;
 let _nearbyMode = 'walk';
 let _nearbyCache = {}; // { walk: [...], drive: [...] }
+let _nearbyAbort = null; // AbortController for current calculation
 
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -695,17 +696,24 @@ window.closeNearbyPopup = function(e) {
   document.body.style.overflow = '';
 };
 
+
 window.setNearbyMode = function(mode) {
-  const prev = _nearbyMode;
   _nearbyMode = mode;
   document.getElementById('tab-walk').classList.toggle('active', mode === 'walk');
   document.getElementById('tab-drive').classList.toggle('active', mode === 'drive');
   if (!_nearbyUserLat || !_nearbyOSMStations) return;
-  // walk→drive = slide left, drive→walk = slide right
   const dir = (mode === 'drive') ? 'left' : 'right';
   if (_nearbyCache[mode]) {
     displayNearbyResults(_nearbyCache[mode], mode, dir);
+    // Resume background calc for other mode if not cached yet
+    const other = mode === 'walk' ? 'drive' : 'walk';
+    if (!_nearbyCache[other]) {
+      if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
+      renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, other, true);
+    }
   } else {
+    // Abort in-progress calculation and start fresh for this mode
+    if (_nearbyAbort) { _nearbyAbort.abort(); _nearbyAbort = null; }
     renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, mode, false);
   }
 };
@@ -742,8 +750,12 @@ function displayNearbyResults(sorted, mode, slideDir) {
 async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
   const resultsEl = document.getElementById('nearby-results');
 
-  // Only show loading UI if this is the active tab (not background prefetch)
+  // Create a new AbortController for this run
+  const ctrl = new AbortController();
   if (!prefetch) {
+    // Cancel any previous run
+    if (_nearbyAbort) _nearbyAbort.abort();
+    _nearbyAbort = ctrl;
     resultsEl.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode === 'walk' ? 'walking' : 'driving'} distances...</div>`;
   }
 
@@ -761,7 +773,6 @@ async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
     .slice(0, 7);
 
   if (!prefetch) {
-    // Animate each station sliding in as its route is calculated
     const container = document.createElement('div');
     container.className = 'nearby-stations';
     resultsEl.innerHTML = '';
@@ -771,12 +782,15 @@ async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
     const withRoutes = [];
 
     for (const s of candidates) {
-      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
-      if (!route) continue;
-      const item = { ...s, route };
-      withRoutes.push(item);
+      // Stop if aborted (user switched tab)
+      if (ctrl.signal.aborted) return;
 
-      // Add card sliding in from alternating sides
+      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
+      if (ctrl.signal.aborted) return; // check again after await
+      if (!route) continue;
+
+      withRoutes.push({ ...s, route });
+
       const btn = document.createElement('button');
       btn.className = `nearby-item ${slideRight ? 'slide-from-right' : 'slide-from-left'}`;
       btn.style.animationDelay = '0s';
@@ -792,49 +806,35 @@ async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
       slideRight = !slideRight;
     }
 
-    // After all loaded — sort by distance with animation
+    if (ctrl.signal.aborted) return;
+
     const sorted = [...withRoutes].sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
     _nearbyCache[mode] = sorted;
+    _nearbyAbort = null;
 
-    // Brief pause so user sees the unsorted state, then animate sort
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 450));
+    if (ctrl.signal.aborted) return;
 
-    // Clear and re-render sorted with sort-up animation on the ones that moved up
-    container.innerHTML = '';
-    sorted.forEach((s, i) => {
-      const btn = document.createElement('button');
-      btn.className = `nearby-item ${i === 0 ? 'nearest' : ''} sort-up`;
-      btn.style.animationDelay = `${i * 0.07}s`;
-      btn.innerHTML = `
-        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-        <span class="nearby-name">${s.name}</span>
-        <span class="nearby-dist">
-          ${mode === 'walk' ? '🚶' : '🚗'} ${s.route.km} km
-          <span class="nearby-mins">${s.route.mins} min</span>
-        </span>`;
-      btn.onclick = () => pickNearby(s.name);
-      if (i === 0) btn.classList.add('nearest');
-      container.appendChild(btn);
-    });
+    displayNearbyResults(sorted, mode, 'right');
 
-    // Background prefetch the OTHER mode silently
-    const otherMode = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[otherMode]) {
-      renderNearbyResults(osmStations, lat, lon, otherMode, true);
-    }
+    // Now silently prefetch the other mode in background
+    const other = mode === 'walk' ? 'drive' : 'walk';
+    if (!_nearbyCache[other]) renderNearbyResults(osmStations, lat, lon, other, true);
 
   } else {
-    // Background prefetch — just compute and cache silently, no UI changes
-    const withRoutes = await Promise.all(
-      candidates.map(async s => {
-        const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
-        return route ? { ...s, route } : null;
-      })
-    );
-    const sorted = withRoutes.filter(Boolean).sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
+    // Background prefetch — sequential to not hammer the API
+    const withRoutes = [];
+    for (const s of candidates) {
+      if (ctrl.signal.aborted) return;
+      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
+      if (ctrl.signal.aborted) return;
+      if (route) withRoutes.push({ ...s, route });
+    }
+    const sorted = withRoutes.sort((a, b) => parseFloat(a.route.km) - parseFloat(b.route.km)).slice(0, 5);
     _nearbyCache[mode] = sorted;
   }
 }
+
 
 function findNearbyStations() {
   openNearbyPopup();
