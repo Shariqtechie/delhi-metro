@@ -1291,7 +1291,9 @@
   text-align: left;
   width: 100%;
   font-family: 'DM Sans', sans-serif;
-  transition: background 0.15s, transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+  transition: background 0.15s;
+  opacity: 0;
+  animation-fill-mode: forwards;
 }
 .nearby-item:hover { background: rgba(255,255,255,0.08); }
 .nearby-item.nearest {
@@ -1299,49 +1301,35 @@
   background: rgba(91,192,255,0.06);
 }
 
-/* Slide in from right (odd) or left (even) */
 .nearby-item.slide-from-right {
-  animation: slideFromRight 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation: slideFromRight 0.3s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
 }
 .nearby-item.slide-from-left {
-  animation: slideFromLeft 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
-}
-
-/* Sort animation — items animate to their new position */
-.nearby-item.sorting {
-  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
-}
-.nearby-item.sort-up {
-  animation: sortUp 0.4s cubic-bezier(0.4,0,0.2,1) forwards;
+  animation: slideFromLeft 0.3s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
 }
 
 @keyframes slideFromRight {
-  from { opacity: 0; transform: translateX(60px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes slideFromLeft {
-  from { opacity: 0; transform: translateX(-60px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes sortUp {
-  0%   { transform: translateY(0); }
-  40%  { transform: translateY(-8px); opacity: 0.7; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-/* Tab slide transition for cached results */
-.nearby-stations.slide-in-right {
-  animation: stationsSlideRight 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
-}
-.nearby-stations.slide-in-left {
-  animation: stationsSlideLeft 0.3s cubic-bezier(0.4,0,0.2,1) forwards;
-}
-@keyframes stationsSlideRight {
   from { opacity: 0; transform: translateX(40px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-@keyframes stationsSlideLeft {
+@keyframes slideFromLeft {
   from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Tab switch slide for cached results */
+.nearby-stations.slide-in-right {
+  animation: stationsSlideRight 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+}
+.nearby-stations.slide-in-left {
+  animation: stationsSlideLeft 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+}
+@keyframes stationsSlideRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes stationsSlideLeft {
+  from { opacity: 0; transform: translateX(-30px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
