@@ -662,10 +662,11 @@ async function fetchOSMStationCoords(lat, lon) {
 }
 
 async function fetchRouteDistance(mode, fromLat, fromLon, toLat, toLon, signal) {
-  const url = mode === 'walk'
-    ? `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${fromLon},${fromLat};${toLon},${toLat}?overview=false`
-    : `https://router.project-osrm.org/route/v1/driving/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
+  // Use routing.openstreetmap.de for both — router.project-osrm.org blocks parallel requests
+  const profile = mode === 'walk' ? 'routed-foot/route/v1/foot' : 'routed-car/route/v1/driving';
+  const url = `https://routing.openstreetmap.de/${profile}/${fromLon},${fromLat};${toLon},${toLat}?overview=false`;
   const res = await fetch(url, signal ? { signal } : {});
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if (data.routes?.[0]) {
     const km = data.routes[0].distance / 1000;
