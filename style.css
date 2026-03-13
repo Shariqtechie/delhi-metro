@@ -1277,7 +1277,7 @@
 
 .nearby-stations { display: flex; flex-direction: column; gap: 6px; }
 
-/* Individual station slide-in during calculation */
+/* Station items — no animations, just clean display */
 .nearby-item {
   display: flex;
   align-items: center;
@@ -1292,45 +1292,11 @@
   width: 100%;
   font-family: 'DM Sans', sans-serif;
   transition: background 0.15s;
-  opacity: 0;
-  animation-fill-mode: forwards;
 }
 .nearby-item:hover { background: rgba(255,255,255,0.08); }
 .nearby-item.nearest {
   border-color: rgba(91,192,255,0.3);
   background: rgba(91,192,255,0.06);
-}
-
-.nearby-item.slide-from-right {
-  animation: slideFromRight 0.3s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
-}
-.nearby-item.slide-from-left {
-  animation: slideFromLeft 0.3s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
-}
-
-@keyframes slideFromRight {
-  from { opacity: 0; transform: translateX(40px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes slideFromLeft {
-  from { opacity: 0; transform: translateX(-40px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-/* Tab switch slide for cached results */
-.nearby-stations.slide-in-right {
-  animation: stationsSlideRight 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
-}
-.nearby-stations.slide-in-left {
-  animation: stationsSlideLeft 0.28s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
-}
-@keyframes stationsSlideRight {
-  from { opacity: 0; transform: translateX(30px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes stationsSlideLeft {
-  from { opacity: 0; transform: translateX(-30px); }
-  to   { opacity: 1; transform: translateX(0); }
 }
 
 .nearby-dot {
