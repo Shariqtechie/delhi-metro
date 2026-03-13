@@ -790,18 +790,19 @@ async function renderNearbyResults(osmStations, lat, lon, mode, prefetch) {
     _nearbyCache[mode] = sorted;
     _nearbyAbort = null;
 
-    await new Promise(r => setTimeout(r, 450));
-    if (ctrl.signal.aborted) return;
+    // Re-render sorted cleanly — no delay, no blink
     displayNearbyResults(sorted, mode, 'right');
 
+    // Background prefetch other mode
     const other = mode === 'walk' ? 'drive' : 'walk';
-    if (!_nearbyCache[other]) renderNearbyResults(osmStations, lat, lon, other, true);
+    if (!_nearbyCache[other]) renderNearbyResults(_nearbyOSMStations, _nearbyUserLat, _nearbyUserLon, other, true);
 
   } else {
+    // Background prefetch — sequential
     const withRoutes = [];
     for (const s of candidates) {
       if (ctrl.signal.aborted) return;
-      const route = await fetchRouteDistance(mode, lat, lon, s.osmLat, s.osmLon).catch(() => null);
+      const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon).catch(() => null);
       if (ctrl.signal.aborted) return;
       if (route) withRoutes.push({ ...s, route });
     }
