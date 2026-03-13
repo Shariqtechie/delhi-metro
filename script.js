@@ -688,20 +688,22 @@ window.closeNearbyPopup = function(e) {
   document.body.style.overflow = '';
 };
 
-function displayNearbyResults(sorted, mode, slideDir) {
+function displayNearbyResults(sorted, mode) {
   const el = document.getElementById('nearby-results');
+  dbg('displayNearbyResults: count=' + sorted.length + ' mode=' + mode);
   if (!sorted.length) { el.innerHTML = '<div class="nearby-empty">No stations found nearby</div>'; return; }
   const icon = mode === 'walk' ? '🚶' : '🚗';
-  const dir = slideDir || 'right';
-  el.innerHTML = `<div class="nearby-stations slide-in-${dir}">
-    ${sorted.map((s, i) => `
-      <button class="nearby-item ${i===0?'nearest':''}" style="animation-delay:${i*0.06}s"
-              onclick="pickNearby('${s.name.replace(/'/g,"\'")}')">
-        <span class="nearby-dot" style="background:${LINE_COLORS[s.line]||'#fff'}"></span>
-        <span class="nearby-name">${s.name}</span>
-        <span class="nearby-dist">${icon} ${s.route.km} km<span class="nearby-mins">${s.route.mins} min</span></span>
-      </button>`).join('')}
-  </div>`;
+  el.innerHTML = '<div class="nearby-stations">' +
+    sorted.map((s, i) => {
+      const col = LINE_COLORS[s.line] || '#888';
+      const name = s.name.replace(/'/g, "\'");
+      return '<button class="nearby-item ' + (i===0?'nearest':'') + '" onclick="pickNearby(\'' + name + '\')">' +
+        '<span class="nearby-dot" style="background:' + col + '"></span>' +
+        '<span class="nearby-name">' + s.name + '</span>' +
+        '<span class="nearby-dist">' + icon + ' ' + s.route.km + ' km<span class="nearby-mins">' + s.route.mins + ' min</span></span>' +
+        '</button>';
+    }).join('') +
+  '</div>';
 }
 
 window.setNearbyMode = function(mode) {
@@ -742,25 +744,29 @@ async function calcMode(mode) {
   el.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode==='walk'?'walking':'driving'} distances...</div>`;
 
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
+  dbg('calcMode: ' + mode + ' candidates=' + candidates.length);
 
-  // Fire ALL requests in parallel
   const results = await Promise.all(
     candidates.map(async s => {
       try {
         const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon, ctrl.signal);
+        dbg('route ok: ' + s.name + ' ' + (route ? route.km+'km' : 'null'));
         return route ? { ...s, route } : null;
-      } catch(e) { return null; }
+      } catch(e) {
+        dbg('route err: ' + s.name + ' ' + e.message, '#E63946');
+        return null;
+      }
     })
   );
 
-  if (ctrl.signal.aborted) return;
+  if (ctrl.signal.aborted) { dbg('aborted after results'); return; }
   _nearbyAbort = null;
 
   const sorted = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
+  dbg('sorted count=' + sorted.length, '#51CF66');
   _nearbyCache[mode] = sorted;
-  displayNearbyResults(sorted, mode, 'right');
+  displayNearbyResults(sorted, mode);
 
-  // Background prefetch other mode
   const other = mode === 'walk' ? 'drive' : 'walk';
   if (!_nearbyCache[other]) prefetchMode(other);
 }
