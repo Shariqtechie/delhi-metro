@@ -1,14 +1,10 @@
 <div align="center">
 
-<img src="header.svg" alt="Delhi Metro Route Finder" width="100%"/>
+<img src="https://readme-typing-svg.demolab.com?font=Bebas+Neue&size=72&pause=12000&color=5BC0FF&center=true&vCenter=true&width=600&height=90&lines=DELHI+METRO;ROUTE+FINDER" alt="Delhi Metro Route Finder"/>
 
 <br/>
 
-<img src="https://readme-typing-svg.demolab.com?font=Bebas+Neue&size=58&pause=12000&color=5BC0FF&center=true&vCenter=true&width=600&height=75&lines=DELHI+METRO;ROUTE+FINDER" alt="Delhi Metro Route Finder"/>
-
-<br/>
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-shariqtechie.github.io%2Fdelhi--metro-blue?style=for-the-badge)](https://shariqtechie.github.io/delhi-metro/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-click%20here-blue?style=for-the-badge)](https://shariqtechie.github.io/delhi-metro/)
 [![GitHub Stars](https://img.shields.io/github/stars/shariqtechie/delhi-metro?style=for-the-badge)](https://github.com/shariqtechie/delhi-metro/stargazers)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
