@@ -117,10 +117,15 @@ function setupField(inputId, dropdownId, field) {
         const color = LINE_COLORS[s.line] || '#fff';
         const item = document.createElement('div');
         item.className = 'dropdown-item';
+        const dots = (s.lines || [s.line]).map(l => {
+          const c = LINE_COLORS[l] || '#fff';
+          return `<span class="item-line-dot" style="background:${c};box-shadow:0 0 6px ${c}88"></span>`;
+        }).join('');
+        const lineLabel = s.lines ? s.lines.map(l => l.replace(' Line','')).join(' · ') : s.line;
         item.innerHTML = `
-          <span class="item-line-dot" style="background:${color};box-shadow:0 0 6px ${color}88"></span>
+          <span class="item-dots">${dots}</span>
           <span class="item-name">${highlight(s.name, q)}</span>
-          <span class="item-line-name">${s.line}</span>`;
+          <span class="item-line-name">${lineLabel}</span>`;
         // Use mousedown so it fires before input loses focus
         item.addEventListener('mousedown', (e) => {
           e.preventDefault();
