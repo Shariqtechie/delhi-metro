@@ -207,7 +207,9 @@ PRs are welcome! Found a missing station, a broken route, or want to add a featu
 
 ## ⚠️ Disclaimer
 
-This app scrapes data from delhimetrorail.info for personal/educational use. It is not affiliated with DMRC. Always verify fare and timings on the official DMRC app before travel.
+All route data, fares, timings and gate information shown in this app is sourced directly from [delhimetrorail.info](https://delhimetrorail.info) — the official Delhi Metro route information website. This app is just a cleaner interface on top of it.
+
+This project is not affiliated with DMRC. For the most accurate and up-to-date information always check the official source directly.
 
 ---
 

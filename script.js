@@ -253,6 +253,7 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, s
 
   const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(from + ' to ' + to + ' Delhi Metro route')}`;
   const mapsUrl   = `https://www.google.com/maps/dir/${encodeURIComponent(from + ' metro station delhi')}/${encodeURIComponent(to + ' metro station delhi')}/?travelmode=transit`;
+  const dmrcUrl   = `https://delhimetrorail.info/${fromSlug}-delhi-metro-station-to-${toSlug2}-delhi-metro-station`;
 
   if (loading) {
     box.innerHTML = `
@@ -286,6 +287,10 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, s
       <button class="popup-close" onclick="closePopup()">← Back</button>
       <div class="popup-title">${msg.title}</div>
       <div class="popup-route" style="margin-bottom:24px;font-size:14px;line-height:1.6;opacity:0.8">${msg.body}</div>
+      <button class="popup-btn btn-dmrc" onclick="window.open('${dmrcUrl}','_blank');closePopup()">
+        <div class="popup-btn-icon">🚇</div>
+        <div class="popup-btn-text">Official DMRC Site<span>Data source — delhimetrorail.info</span></div>
+      </button>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank');closePopup()">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>Search this route online</span></div>
@@ -412,6 +417,10 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, s
     </div>
 
     <div class="popup-actions">
+      <button class="popup-btn btn-dmrc" onclick="window.open('${dmrcUrl}','_blank')">
+        <div class="popup-btn-icon">🚇</div>
+        <div class="popup-btn-text">Official DMRC Site<span>Data source — delhimetrorail.info</span></div>
+      </button>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
