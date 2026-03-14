@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Bebas+Neue&size=72&pause=12000&color=5BC0FF&center=true&vCenter=true&width=600&height=90&lines=DELHI+METRO;ROUTE+FINDER" alt="Delhi Metro Route Finder"/>
+<img src="https://readme-typing-svg.demolab.com?font=Bebas+Neue&size=72&pause=9000&color=5BC0FF&center=true&vCenter=true&width=600&height=90&lines=DELHI+METRO;ROUTE+FINDER" alt="Delhi Metro Route Finder"/>
 
 <br/>
 
