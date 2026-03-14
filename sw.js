@@ -1,4 +1,4 @@
-const CACHE = 'delhi-metro-v1';
+const CACHE = 'delhi-metro-v2';
 const ASSETS = [
   '/delhi-metro/',
   '/delhi-metro/index.html',

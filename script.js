@@ -1,59 +1,5 @@
+
 // ── DEBUG PANEL (remove when done) ──
-const _dbg = document.createElement('div');
-_dbg.id = 'debug-panel';
-_dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:180px;overflow-y:auto;background:#0a0a0a;border-top:2px solid #E63946;font-family:monospace;font-size:11px;z-index:99999;padding:6px 10px;display:none';
-document.body.appendChild(_dbg);
-
-function dbg(msg, color) {
-  _dbg.style.display = 'block';
-  const line = document.createElement('div');
-  line.style.color = color || '#4CAF50';
-  line.style.borderBottom = '1px solid #222';
-  line.style.padding = '2px 0';
-  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-  _dbg.appendChild(line);
-  _dbg.scrollTop = _dbg.scrollHeight;
-}
-
-window.addEventListener('error', e => dbg('❌ ' + e.message + ' (line ' + e.lineno + ')', '#E63946'));
-window.addEventListener('unhandledrejection', e => dbg('❌ Promise: ' + e.reason, '#E63946'));
-
-const LINE_COLORS = {
-  'Red Line': '#E63946',
-  'Yellow Line': '#FFB703',
-  'Blue Line': '#5BC0FF',
-  'Green Line': '#2DC653',
-  'Violet Line': '#B46EFF',
-  'Pink Line': '#FF6EB8',
-  'Magenta Line': '#FF6090',
-  'Airport Express': '#7EB8FF',
-  'Grey Line': '#AAAAAA',
-};
-
-
-const POPULAR = [
-  {from:"Kashmere Gate", to:"Rajiv Chowk"},
-  {from:"New Delhi", to:"Hauz Khas"},
-  {from:"Dwarka Sector 21", to:"Noida City Center"},
-  {from:"Jahangirpuri", to:"HUDA City Centre"},
-  {from:"Inderlok", to:"Botanical Garden"},
-  {from:"Dilshad Garden", to:"Rithala"},
-];
-
-let fromVal = '', toVal = '';
-
-// Build quick picks
-const picksGrid = document.getElementById('picks-grid');
-POPULAR.forEach(p => {
-  const chip = document.createElement('div');
-  chip.className = 'pick-chip';
-  chip.innerHTML = `<span>📍</span>${p.from} → ${p.to}`;
-  chip.onclick = () => {
-    setStation('from', p.from);
-    setStation('to', p.to);
-  };
-  picksGrid.appendChild(chip);
-});
 
 function setStation(field, name) {
   if (field === 'from') {
@@ -280,8 +226,7 @@ async function findRoute() {
     if (json.error) throw new Error(json.error);
 
     const routes = json.routes || [];
-    if (routes[0]) dbg('route0 stations:' + routes[0].stations.length + ' segs:' + routes[0].segments.length, '#FFB703');
-    if (routes[0]) dbg('gates: ' + JSON.stringify(routes.map(r => r.gates?.length || 0)), '#FF6EB8');
+
 
     // Save to cache
     cacheSet(cacheKey, routes);
@@ -691,7 +636,6 @@ window.closeNearbyPopup = function(e) {
 
 function displayNearbyResults(sorted, mode) {
   const el = document.getElementById('nearby-results');
-  dbg('displayNearbyResults: count=' + sorted.length + ' mode=' + mode);
   if (!sorted.length) { el.innerHTML = '<div class="nearby-empty">No stations found nearby</div>'; return; }
   const icon = mode === 'walk' ? '🚶' : '🚗';
   el.innerHTML = '<div class="nearby-stations">' +
@@ -738,21 +682,17 @@ async function calcMode(mode) {
   const el = document.getElementById('nearby-results');
   el.innerHTML = `<div class="nearby-loading"><div class="nearby-spinner"></div>Calculating ${mode==='walk'?'walking':'driving'} distances...</div>`;
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
-  dbg('calcMode: ' + mode + ' candidates=' + candidates.length);
   const results = await Promise.all(
     candidates.map(async s => {
       try {
         const route = await fetchRouteDistance(mode, _nearbyUserLat, _nearbyUserLon, s.osmLat, s.osmLon);
-        dbg('route ok: ' + s.name + ' ' + (route ? route.km+'km' : 'null'));
         return route ? { ...s, route } : null;
       } catch(e) {
-        dbg('route err: ' + s.name + ' ' + e.message, '#E63946');
         return null;
       }
     })
   );
   const sorted = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
-  dbg('sorted count=' + sorted.length, '#51CF66');
   _nearbyCache[mode] = sorted;
   // Only show if this mode is still active
   if (_nearbyMode === mode) displayNearbyResults(sorted, mode);
@@ -763,7 +703,6 @@ async function calcMode(mode) {
 
 
 async function prefetchMode(mode) {
-  dbg('prefetch start: ' + mode);
   const candidates = getCandidates(_nearbyUserLat, _nearbyUserLon);
   const results = await Promise.all(
     candidates.map(async s => {
@@ -774,7 +713,6 @@ async function prefetchMode(mode) {
     })
   );
   _nearbyCache[mode] = results.filter(Boolean).sort((a,b) => parseFloat(a.route.km)-parseFloat(b.route.km)).slice(0,5);
-  dbg('prefetch done: ' + mode + ' count=' + _nearbyCache[mode].length, '#51CF66');
   // If user is now on this tab, show results
   if (_nearbyMode === mode) displayNearbyResults(_nearbyCache[mode], mode);
 }

@@ -1,7 +1,7 @@
 {
   "name": "Delhi Metro Route Finder",
   "short_name": "Delhi Metro",
-  "description": "Find the fastest Delhi Metro route with gate info and interchange details",
+  "description": "Find the fastest Delhi Metro route — 262 stations, 11 lines, gate info and interchange details",
   "start_url": "/delhi-metro/",
   "scope": "/delhi-metro/",
   "display": "standalone",

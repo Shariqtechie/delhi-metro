@@ -1,97 +1,224 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Bebas+Neue&size=60&pause=1000&color=5BC0FF&center=true&vCenter=true&width=600&height=80&lines=DELHI+METRO;ROUTE+FINDER" alt="Delhi Metro Route Finder" />
+# 🚇 Delhi Metro Route Finder
 
-<br/>
+**The fastest way to plan your Delhi Metro journey — live routes, gate info, nearby stations and more.**
 
-[![Live Demo](https://img.shields.io/badge/🚇%20LIVE%20DEMO-Visit%20Site-5BC0FF?style=for-the-badge&logoColor=white)](https://shariqtechie.github.io/delhi-metro/)
-[![Made with Love](https://img.shields.io/badge/Made%20with-❤️%20in%20Delhi-E63946?style=for-the-badge)](https://github.com/shariqtechie/delhi-metro)
-[![No Framework](https://img.shields.io/badge/Zero%20Framework-Pure%20HTML%2FCS%2FJS-2DC653?style=for-the-badge)](https://github.com/shariqtechie/delhi-metro)
-
-<br/>
-
-> **The route finder Delhi Metro's own app forgot to build.**  
-> Search any of 257 stations. Pick your destination. Go.
-
-<br/>
-
----
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-shariqtechie.github.io%2Fdelhi--metro-blue?style=for-the-badge)](https://shariqtechie.github.io/delhi-metro/)
+[![GitHub Stars](https://img.shields.io/github/stars/shariqtechie/delhi-metro?style=for-the-badge)](https://github.com/shariqtechie/delhi-metro/stargazers)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
 </div>
 
-<br/>
-
-## 🗺️ What is this?
-
-The official Delhi Metro app has no proper station search. Google is overkill for just finding a route. This is the fix — a **fast, beautiful, route finder**.
-
-Type a station. Pick another. Hit the button. Done.
-
-<br/>
+---
 
 ## ✨ Features
 
+- 🔍 **Live Route Search** — Scrapes real-time data from delhimetrorail.info via a Cloudflare Worker
+- 🛤️ **Multiple Route Options** — Shows all possible routes as tabs so you can pick the best one
+- 🚉 **262 Stations, 11 Lines** — Complete network including Red, Yellow, Blue, Green, Violet, Pink, Magenta, Airport Express, Aqua, Grey and Rapid Metro
+- 🗺️ **Visual Route Map** — Full route diagram with colour-coded line segments and interchange markers
+- 🚪 **Gate Info** — Entry/exit gate details for every station on your route
+- 💰 **Fare & Time** — Exact fare and travel time per route, plus first and last train timings
+- 📍 **Nearest Stations (GPS)** — Finds the closest metro stations to your location with real road distances via OSRM routing
+- 🚶 **Walk / Drive Tabs** — Switch between walking and driving time to nearby stations
+- ⭐ **Save Routes** — Star your favourite routes and they stay saved across sessions (up to 10)
+- 🕐 **Recent Searches** — Last 5 routes remembered automatically
+- 🔗 **Shareable Links** — Every search updates the URL so you can share exact routes
+- 🔎 **Fuzzy Search** — Finds stations even with typos or partial names
+- 📱 **PWA** — Installable on Android and iOS, works offline for the UI
+- ⚡ **3-Hour Cache** — Route results cached locally so repeated searches are instant
+
+---
+
+## 🏗️ Architecture
+
 ```
-🔍  Live station search — results as you type
-🚇  All 257 stations across all 10 lines
-🎨  Colour-coded by line (Red, Yellow, Blue, Green, Violet, Pink, Magenta, Grey, Airport...)
-⇅   One-tap swap — instantly reverse your route
-🗺️  Opens in Google Maps (transit mode) OR Google Search — your choice
-📱  Fully mobile responsive
-⚡  Zero dependencies
+User (GitHub Pages)
+    │
+    │  fetch()
+    ▼
+Cloudflare Worker
+    │
+    │  fetch() + HTML scrape
+    ▼
+delhimetrorail.info
+    │
+    │  returns parsed JSON
+    ▼
+{ routes: [ { fare, time, firstTrain,
+              lastTrain, stations[],
+              segments[], gates[] } ] }
+    │
+    ▼
+Full-screen Route View
+  ├── Route tabs (if multiple options)
+  ├── Stats bar (fare · time · first/last train)
+  ├── Visual route map + gate list
+  └── Share · Save · Google Maps buttons
 ```
 
-<br/>
+**Nearby Stations flow:**
+```
+GPS coords (instant)
+    → Overpass API → nearest stations by coords
+    → OSRM parallel routing (Promise.all × 7)
+    → Walk & Drive tabs with real road distance + time
+```
 
-## 🛤️ Lines Covered
+---
 
-<div align="center">
+## 🗂️ File Structure
 
-| Line | Colour | Stations |
-|------|--------|----------|
-| 🔴 Red Line | `#E63946` | Rithala ↔ Shaheed Sthal |
-| 🟡 Yellow Line | `#FFB703` | Samaypur Badli ↔ Millennium City Centre |
-| 🔵 Blue Line | `#5BC0FF` | Dwarka Sec 21 ↔ Noida Electronic City / Vaishali |
-| 🟢 Green Line | `#2DC653` | Inderlok / Brigadier Hoshiyar Singh ↔ Bahadurgarh |
-| 🟣 Violet Line | `#B46EFF` | Kashmere Gate ↔ Raja Nahar Singh |
-| 🩷 Pink Line | `#FF6EB8` | Majlis Park ↔ Shiv Vihar |
-| 🌸 Magenta Line | `#FF6090` | Janakpuri West ↔ Botanical Garden |
-| ✈️ Airport Express | `#7EB8FF` | New Delhi ↔ Dwarka Sec 25 |
-| ⬜ Grey Line | `#AAAAAA` | Dwarka ↔ Dhansa Bus Stand |
+```
+delhi-metro/
+├── index.html        # Main UI — search form, stats, nearby popup
+├── style.css         # All styles — dark theme, animations, responsive
+├── script.js         # All JS logic — routing, search, GPS, cache, PWA
+├── stations.js       # 262 station objects (name, line, slug)
+├── worker.js         # Cloudflare Worker — scrapes delhimetrorail.info
+├── manifest.json     # PWA manifest
+├── sw.js             # Service worker — offline caching
+├── favicon.png       # Browser tab icon
+├── icon-192.png      # PWA icon (Android)
+└── icon-512.png      # PWA icon (splash / iOS)
+```
 
-</div>
+---
 
-<br/>
+## 🚀 Setup & Deployment
 
-## 📦 How to Use
+### 1. Deploy the Cloudflare Worker
 
-No downloads. No installs. No accounts.
+1. Go to [workers.cloudflare.com](https://workers.cloudflare.com) and create a free account
+2. Create a new Worker and paste the contents of `worker.js`
+3. Deploy — note your worker URL (e.g. `https://your-worker.yourname.workers.dev`)
 
-Just go to 👉 **[shariqtechie.github.io/delhi-metro](https://shariqtechie.github.io/delhi-metro/)**
+### 2. Update the Worker URL in script.js
 
-Bookmark it. Add it to your home screen. Share it with anyone in Delhi.  
-It's always live, always updated, always free.
+```js
+const WORKER_URL = 'https://your-worker.yourname.workers.dev';
+```
 
-<br/>
-
-## 🙌 Contributing
-
-Found a station missing or renamed? PRs welcome.
+### 3. Deploy to GitHub Pages
 
 ```bash
-git clone https://github.com/shariqtechie/delhi-metro.git
-# Edit the STATIONS array in index.html
-# Open a PR
+git clone https://github.com/yourusername/delhi-metro
+cd delhi-metro
+git add .
+git commit -m "initial deploy"
+git push origin main
 ```
 
-<br/>
+Then go to **Settings → Pages → Source: main branch**.  
+Your site goes live at `https://yourusername.github.io/delhi-metro/`
+
+### 4. Update paths in manifest.json and sw.js
+
+Make sure `start_url` and `scope` match your repo name:
+
+```json
+"start_url": "/delhi-metro/",
+"scope": "/delhi-metro/"
+```
+
+---
+
+## 🧠 How It Works
+
+### Route Scraping (Cloudflare Worker)
+
+The worker fetches the route page from `delhimetrorail.info`, parses the raw HTML and extracts all route options, fare, travel time, first/last trains, station lists, interchange segments and gate info — then returns clean JSON to the frontend.
+
+### Fuzzy Search
+
+Two-stage scoring for station name matching:
+
+| Match type | Score |
+|---|---|
+| Exact match | 4 |
+| Starts with query | 3 |
+| Includes query | 2 |
+| Word / char sequence | 1 |
+
+### GPS Nearby Stations
+
+1. `navigator.geolocation` gets your coordinates
+2. Overpass API finds the nearest metro stations
+3. OSRM routing fires 7 parallel requests for real road distances
+4. Results sorted by distance, shown with walk/drive time
+5. Both modes prefetch in background — tab switching is instant
+
+### Caching Strategy
+
+| Data | Strategy | TTL |
+|---|---|---|
+| Route results | localStorage | 3 hours |
+| Saved routes | localStorage | No expiry |
+| Recent searches | localStorage | Last 5, deduplicated |
+| Static assets | Service worker cache-first | Until `v2` cache bumped |
+| Worker requests | Network-first | Always live |
+
+---
+
+## 📱 PWA Installation
+
+**Android (Chrome):** Open the site → tap the install banner or Menu → *Add to Home Screen*
+
+**iOS (Safari):** Open the site → tap Share → *Add to Home Screen*
+
+Once installed, the app works offline for the UI. Route searches still require internet.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Tech |
+|---|---|
+| Frontend | Vanilla HTML, CSS, JavaScript |
+| Fonts | Bebas Neue + DM Sans (Google Fonts) |
+| Backend | Cloudflare Worker (free tier) |
+| Data source | delhimetrorail.info (scraped) |
+| Routing | OSRM — routing.openstreetmap.de |
+| Station coords | OpenStreetMap Overpass API |
+| Hosting | GitHub Pages |
+| PWA | Web App Manifest + Service Worker |
+
+---
+
+## 🔮 Roadmap
+
+- [ ] Hardcoded station coordinates — removes Overpass dependency, instant nearby results
+- [ ] Last mile directions to station gate
+- [ ] Journey planner with departure time input
+- [ ] Fare calculator for groups
+- [ ] Accessibility info per station
+
+---
+
+## 🤝 Contributing
+
+PRs are welcome! Found a missing station, a broken route, or want to add a feature:
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Commit and push
+4. Open a pull request
+
+---
+
+## ⚠️ Disclaimer
+
+This app scrapes data from delhimetrorail.info for personal/educational use. It is not affiliated with DMRC. Always verify fare and timings on the official DMRC app before travel.
+
+---
+
+## 📄 License
+
+MIT — do whatever you want, just don't blame me if the metro's late.
 
 ---
 
 <div align="center">
-
-**Built for Delhi. By someone tired of bad metro apps.**
-
-[![GitHub stars](https://img.shields.io/github/stars/shariqtechie/delhi-metro?style=social)](https://github.com/shariqtechie/delhi-metro)
-
+Made with ☕ and a lot of <code>console.log</code> by <a href="https://github.com/shariqtechie">@shariqtechie</a>
 </div>
