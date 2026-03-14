@@ -78,7 +78,7 @@ delhi-metro/
 ├── style.css         # All styles — dark theme, animations, responsive
 ├── script.js         # All JS logic — routing, search, GPS, cache, PWA
 ├── stations.js       # 262 station objects (name, line, slug)
-├── worker.js         # Cloudflare Worker — scrapes delhimetrorail.info
+├── worker.js         # Cloudflare Worker — private, not included
 ├── manifest.json     # PWA manifest
 ├── sw.js             # Service worker — offline caching
 ├── favicon.png       # Browser tab icon
@@ -90,19 +90,7 @@ delhi-metro/
 
 ## 🚀 Setup & Deployment
 
-### 1. Deploy the Cloudflare Worker
-
-1. Go to [workers.cloudflare.com](https://workers.cloudflare.com) and create a free account
-2. Create a new Worker and paste the contents of `worker.js`
-3. Deploy — note your worker URL (e.g. `https://your-worker.yourname.workers.dev`)
-
-### 2. Update the Worker URL in script.js
-
-```js
-const WORKER_URL = 'https://your-worker.yourname.workers.dev';
-```
-
-### 3. Deploy to GitHub Pages
+### 1. Fork & deploy to GitHub Pages
 
 ```bash
 git clone https://github.com/yourusername/delhi-metro
@@ -115,7 +103,7 @@ git push origin main
 Then go to **Settings → Pages → Source: main branch**.  
 Your site goes live at `https://yourusername.github.io/delhi-metro/`
 
-### 4. Update paths in manifest.json and sw.js
+### 2. Update paths in manifest.json and sw.js
 
 Make sure `start_url` and `scope` match your repo name:
 
@@ -123,6 +111,14 @@ Make sure `start_url` and `scope` match your repo name:
 "start_url": "/delhi-metro/",
 "scope": "/delhi-metro/"
 ```
+
+### 3. Backend / Cloudflare Worker
+
+The live route data is powered by a private Cloudflare Worker that scrapes delhimetrorail.info. To keep the worker healthy and prevent quota abuse, **the worker URL is not public**.
+
+If you want to self-host or need API access for your own project, feel free to reach out:
+
+📬 **[Open an issue](https://github.com/shariqtechie/delhi-metro/issues)** or contact me directly via GitHub.
 
 ---
 

@@ -151,6 +151,7 @@ function swapStations() {
 
 // ── IMPORTANT: Replace this with your Cloudflare Worker URL after deploying ──
 const WORKER_URL = 'https://delhi-metro-worker.shariqahmad129.workers.dev';
+const WORKER_KEY = 'dmrc_shariq_2025';
 
 function openRouteView() {
   const view = document.getElementById('route-view');
@@ -221,7 +222,8 @@ async function findRoute() {
   showPopup({ loading: true, from, to });
 
   try {
-    const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`);
+    const res  = await fetch(`${WORKER_URL}/?from=${fromSlug}&to=${toSlug2}`, { headers: { 'x-api-key': WORKER_KEY } });
+    if (res.status === 429 || res.status === 503) { showPopup({ loading: false, from, to, error: true, status: res.status }); return; }
     const json = await res.json();
     if (json.error) throw new Error(json.error);
 
@@ -243,7 +245,7 @@ async function findRoute() {
   }
 }
 
-function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 }) {
+function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, status = 0 }) {
   const popup = document.getElementById('route-view');
   const fromSlug = toSlug(from);
   const toSlug2  = toSlug(to);
@@ -266,10 +268,24 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0 })
   }
 
   if (error) {
+    const overloadMsgs = [
+      { title: "WORKER DOWN BAD 😵", body: "100,000 people asked for metro routes today. The backend went home early. Try again tomorrow or just walk lol." },
+      { title: "TOO POPULAR 💀",      body: "The API hit its daily limit. Basically this app is too good. Developer is not rich enough to handle this." },
+      { title: "FREE TIER VIBES 🪙",  body: "Cloudflare gave us 100k free requests and Delhi Metro users burned through them. Touch grass and come back tomorrow." },
+      { title: "QUOTA: COOKED 🍳",    body: "Daily request limit reached. The backend is resting. It'll be back at midnight IST, refreshed and ready to suffer again." },
+    ];
+    const genericMsgs = [
+      { title: "SIGNAL LOST 📡",      body: "Couldn't reach the backend. Either it's down, or the metro gods are testing you. Try again in a sec." },
+      { title: "404: ROUTE VIBES 🚧", body: "Something broke on our end. Not the metro though — that's always on time (lol). Try again or use Google." },
+      { title: "OOPS 🤌",             body: "Server threw hands and left. We don't know why either. Try again or blame DMRC, everyone does." },
+    ];
+    const isOverload = status === 429 || status === 503;
+    const pool = isOverload ? overloadMsgs : genericMsgs;
+    const msg = pool[Math.floor(Math.random() * pool.length)];
     box.innerHTML = `
       <button class="popup-close" onclick="closePopup()">← Back</button>
-      <div class="popup-title">OOPS!</div>
-      <div class="popup-route" style="margin-bottom:20px">Couldn't fetch route data. Try Google instead.</div>
+      <div class="popup-title">${msg.title}</div>
+      <div class="popup-route" style="margin-bottom:24px;font-size:14px;line-height:1.6;opacity:0.8">${msg.body}</div>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank');closePopup()">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>Search this route online</span></div>
