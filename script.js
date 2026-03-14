@@ -1,5 +1,20 @@
+const LINE_COLORS = {
+  'Red Line':             '#E63946',
+  'Yellow Line':          '#FFB703',
+  'Blue Line':            '#5BC0FF',
+  'Blue Line (Branch)':   '#5BC0FF',
+  'Violet Line':          '#B46EFF',
+  'Green Line':           '#2DC653',
+  'Green Line (Branch)':  '#2DC653',
+  'Pink Line':            '#FF6EB8',
+  'Magenta Line':         '#FF6090',
+  'Airport Express':      '#7EB8FF',
+  'Grey Line':            '#AAAAAA',
+  'Aqua Line':            '#00BFA5',
+  'Rapid Metro':          '#00BCD4',
+};
 
-// ── DEBUG PANEL (remove when done) ──
+let fromVal = '', toVal = '';
 
 function setStation(field, name) {
   if (field === 'from') {
