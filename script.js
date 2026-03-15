@@ -441,6 +441,14 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, s
         <div class="popup-btn-icon">🚇</div>
         <div class="popup-btn-text">Official DMRC Site<span>Data source — delhimetrorail.info</span></div>
       </button>
+      <button class="popup-btn btn-whatsapp" onclick="window.open('https://wa.me/919650855800?text=Hi','_blank')">
+        <div class="popup-btn-icon">🎟️</div>
+        <div class="popup-btn-text">Buy Ticket via WhatsApp<span>DMRC official bot — pay by UPI & get QR ticket</span></div>
+      </button>
+      <button class="popup-btn btn-whatsapp" onclick="window.open('https://wa.me/919650855800?text=Hi','_blank')">
+        <div class="popup-btn-icon">🎟️</div>
+        <div class="popup-btn-text">Buy Ticket via WhatsApp<span>DMRC official bot — pay by UPI & get QR ticket</span></div>
+      </button>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
@@ -612,6 +620,32 @@ function renderRecentRoutes() {
           </button>`).join('')}
       </div>`;
   } catch(e) {}
+}
+
+// ── POPULAR ROUTES ──
+// ── POPULAR ROUTES ──
+const POPULAR_ROUTES = [
+  { from: 'Kashmere Gate',    to: 'Rajiv Chowk' },
+  { from: 'New Delhi',        to: 'Airport' },
+  { from: 'Huda City Centre', to: 'Samaypur Badli' },
+  { from: 'Dwarka Sector 21', to: 'Noida Electronic City' },
+  { from: 'Botanical Garden', to: 'Janakpuri West' },
+  { from: 'Vaishali',         to: 'Dwarka' },
+];
+
+function renderPopularRoutes() {
+  const grid = document.getElementById('picks-grid');
+  if (!grid) return;
+  grid.innerHTML = POPULAR_ROUTES.map(r => {
+    const fromStation = STATIONS.find(s => s.name === r.from);
+    const col = fromStation ? (LINE_COLORS[fromStation.line] || '#5BC0FF') : '#5BC0FF';
+    return `<button class="pick-chip" onclick="loadRecent('${r.from}','${r.to}')" style="border-color:${col}33">
+      <span class="pick-dot" style="background:${col}"></span>
+      <span class="pick-from">${r.from}</span>
+      <span class="pick-arrow">→</span>
+      <span class="pick-to">${r.to}</span>
+    </button>`;
+  }).join('');
 }
 
 // ── GPS NEARBY STATIONS ──
@@ -814,6 +848,7 @@ window.loadRecent = function(from, to) {
 document.addEventListener('DOMContentLoaded', () => {
   renderSavedRoutes();
   renderRecentRoutes();
+  renderPopularRoutes();
 });
 
 document.addEventListener('keydown', e => {
