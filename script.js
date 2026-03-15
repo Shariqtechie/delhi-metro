@@ -445,10 +445,6 @@ function showPopup({ loading, from, to, data, error, allRoutes, activeTab = 0, s
         <div class="popup-btn-icon">🎟️</div>
         <div class="popup-btn-text">Buy Ticket via WhatsApp<span>DMRC official bot — pay by UPI & get QR ticket</span></div>
       </button>
-      <button class="popup-btn btn-whatsapp" onclick="window.open('https://wa.me/919650855800?text=Hi','_blank')">
-        <div class="popup-btn-icon">🎟️</div>
-        <div class="popup-btn-text">Buy Ticket via WhatsApp<span>DMRC official bot — pay by UPI & get QR ticket</span></div>
-      </button>
       <button class="popup-btn btn-google" onclick="window.open('${googleUrl}','_blank')">
         <div class="popup-btn-icon">🔍</div>
         <div class="popup-btn-text">Google Search<span>More details online</span></div>
